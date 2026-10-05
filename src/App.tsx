@@ -125,6 +125,7 @@ function App() {
   const navigate = (next: Page) => {
     window.location.hash = `/${next}`;
     setMenuOpen(false);
+
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
@@ -1064,12 +1065,18 @@ function CustomerForm({
     /*
      * WhatsApp product message
      *
-     * Format:
-     * Name        Qty      Price
-     * Bigili       2       ₹90
+     * Uses spaces for columns.
+     * Triple backticks make the table
+     * monospace in WhatsApp so the columns
+     * remain vertically aligned.
      *
-     * Price = Sale Price × Quantity
+     * Format:
+     *
+     * Name              Qty       Price
+     * Bigili              2        ₹90
+     * 50 DLX              5       ₹220
      */
+
     const lines = cart
       .map((item) => {
         const product =
@@ -1086,14 +1093,17 @@ function CustomerForm({
           item.quantity;
 
         return `${product.name.padEnd(
-          15,
+          18,
           ' '
-        )} ${String(
+        )}${String(
           item.quantity
         ).padStart(
-          3,
+          4,
           ' '
-        )}      ${money(price)}`;
+        )}${money(price).padStart(
+          12,
+          ' '
+        )}`;
       })
       .filter(Boolean)
       .join('\n');
@@ -1108,8 +1118,10 @@ Area: ${form.area.trim()}
 
 Selected Products
 ----------------
-Name             Qty      Price
+\`\`\`
+Name              Qty       Price
 ${lines}
+\`\`\`
 
 ----------------
 TOTAL: ${money(totals.sale)}
