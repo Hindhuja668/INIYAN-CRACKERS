@@ -1270,11 +1270,6 @@ function About({
         <div className="about-seal">
           <Sparkles size={30} />
 
-          <span>
-            Since
-            <br />
-            <b>2026</b>
-          </span>
         </div>
       </div>
 
