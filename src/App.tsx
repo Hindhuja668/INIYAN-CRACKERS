@@ -1,1112 +1,683 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  ArrowRight,
-  Check,
-  ChevronLeft,
-  Clock3,
-  Flame,
-  HeartHandshake,
-  List,
-  MapPin,
-  Menu,
-  MessageCircle,
-  Minus,
-  Package,
-  Phone,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-  X,
-  Zap,
-} from 'lucide-react';
-
-import {
-  BUSINESS_AREA,
-  BUSINESS_HOURS,
-  BUSINESS_NAME,
-  BUSINESS_PHONE,
-  OWNER_WHATSAPP,
-  STORAGE_KEY,
-} from '@/config';
-
-import { products, type Product } from '@/products';
-
-type CartItem = {
-  productId: number;
-  quantity: number;
-};
-
-type Totals = {
-  market: number;
-  sale: number;
-  savings: number;
-};
+import { useMemo, useState } from 'react';
+import { products } from './products';
+import { OWNER_WHATSAPP } from './config';
 
 type Page = 'home' | 'products' | 'inquiry' | 'about' | 'contact';
 
+type CartItem = {
+  productId: string;
+  quantity: number;
+};
+
+type CustomerForm = {
+  name: string;
+  mobile: string;
+  area: string;
+  message: string;
+};
+
 const money = (value: number) =>
-  `₹${value.toLocaleString('en-IN')}`;
+  `₹${value.toLocaleString('en-IN', {
+    maximumFractionDigits: 2,
+  })}`;
 
-const getPage = (): Page => {
-  const page = window.location.hash.replace('#/', '') as Page;
+function App() {
+  const [page, setPage] = useState<Page>('home');
 
-  return ['home', 'products', 'inquiry', 'about', 'contact'].includes(page)
-    ? page
-    : 'home';
-};
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('crackers-cart') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
-const readCart = (): CartItem[] => {
-  try {
-    return JSON.parse(
-      localStorage.getItem(STORAGE_KEY) || '[]'
-    ) as CartItem[];
-  } catch {
-    return [];
-  }
-};
+  const updateCart = (nextCart: CartItem[]) => {
+    setCart(nextCart);
+    localStorage.setItem('crackers-cart', JSON.stringify(nextCart));
+  };
 
-const getTotals = (cart: CartItem[]): Totals =>
-  cart.reduce(
-    (total, item) => {
+  const addToCart = (productId: string) => {
+    const existing = cart.find((item) => item.productId === productId);
+
+    if (existing) {
+      updateCart(
+        cart.map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+    } else {
+      updateCart([...cart, { productId, quantity: 1 }]);
+    }
+  };
+
+  const changeQuantity = (productId: string, change: number) => {
+    const nextCart = cart
+      .map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: item.quantity + change }
+          : item
+      )
+      .filter((item) => item.quantity > 0);
+
+    updateCart(nextCart);
+  };
+
+  const removeFromCart = (productId: string) => {
+    updateCart(cart.filter((item) => item.productId !== productId));
+  };
+
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const totals = useMemo(() => {
+    let market = 0;
+    let sale = 0;
+
+    cart.forEach((item) => {
       const product = products.find(
         (entry) => entry.id === item.productId
       );
 
-      if (!product) return total;
+      if (!product) return;
 
-      return {
-        market:
-          total.market +
-          product.marketPrice * item.quantity,
+      market += product.marketPrice * item.quantity;
+      sale += product.salePrice * item.quantity;
+    });
 
-        sale:
-          total.sale +
-          product.salePrice * item.quantity,
-
-        savings:
-          total.savings +
-          (product.marketPrice - product.salePrice) *
-            item.quantity,
-      };
-    },
-    {
-      market: 0,
-      sale: 0,
-      savings: 0,
-    }
-  );
-
-function App() {
-  const [page, setPage] = useState<Page>(getPage);
-  const [cart, setCart] = useState<CartItem[]>(readCart);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const onHash = () => setPage(getPage());
-
-    window.addEventListener('hashchange', onHash);
-
-    return () => {
-      window.removeEventListener('hashchange', onHash);
+    return {
+      market,
+      sale,
+      savings: market - sale,
     };
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
 
-  const itemCount = cart.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
-
-  const navigate = (next: Page) => {
-    window.location.hash = `/${next}`;
-    setMenuOpen(false);
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  };
-
-  const addToCart = (
-    productId: number,
-    quantity: number
-  ) => {
-    setCart((current) =>
-      current.some(
-        (item) => item.productId === productId
-      )
-        ? current.map((item) =>
-            item.productId === productId
-              ? {
-                  ...item,
-                  quantity:
-                    item.quantity + quantity,
-                }
-              : item
-          )
-        : [
-            ...current,
-            {
-              productId,
-              quantity,
-            },
-          ]
-    );
-  };
-
-  const updateQuantity = (
-    productId: number,
-    change: number
-  ) => {
-    setCart((current) =>
-      current.flatMap((item) =>
-        item.productId === productId &&
-        item.quantity + change <= 0
-          ? []
-          : item.productId === productId
-          ? [
-              {
-                ...item,
-                quantity:
-                  item.quantity + change,
-              },
-            ]
-          : [item]
-      )
-    );
-  };
-
-  const removeItem = (productId: number) => {
-    setCart((current) =>
-      current.filter(
-        (item) => item.productId !== productId
-      )
-    );
+  const navigate = (nextPage: Page) => {
+    setPage(nextPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className="header-inner">
-          <button
-            className="brand"
-            onClick={() => navigate('home')}
-          >
-            <span className="brand-mark">
-              <Sparkles size={18} />
-            </span>
+    <div className="app">
+      <Header
+        page={page}
+        navigate={navigate}
+        cartCount={cartCount}
+      />
 
-            <span>
-              {BUSINESS_NAME}
-              <small>
-                Quality fireworks & crackers
-              </small>
-            </span>
-          </button>
+      {page === 'home' && (
+        <HomePage
+          navigate={navigate}
+          products={products}
+          addToCart={addToCart}
+        />
+      )}
 
-          <button
-            className="menu-toggle"
-            onClick={() =>
-              setMenuOpen(!menuOpen)
-            }
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </button>
+      {page === 'products' && (
+        <ProductsPage
+          products={products}
+          addToCart={addToCart}
+        />
+      )}
 
-          <nav
-            className={
-              menuOpen
-                ? 'main-nav open'
-                : 'main-nav'
-            }
-          >
-            {(
-              [
-                'home',
-                'products',
-                'about',
-                'contact',
-              ] as Page[]
-            ).map((item) => (
-              <button
-                key={item}
-                className={
-                  page === item ? 'active' : ''
-                }
-                onClick={() =>
-                  navigate(item)
-                }
-              >
-                {item[0].toUpperCase() +
-                  item.slice(1)}
-              </button>
-            ))}
+      {page === 'inquiry' && (
+        <InquiryPage
+          cart={cart}
+          products={products}
+          totals={totals}
+          changeQuantity={changeQuantity}
+          removeFromCart={removeFromCart}
+          navigate={navigate}
+        />
+      )}
 
-            <button
-              className="nav-inquiry"
-              onClick={() =>
-                navigate('inquiry')
-              }
-            >
-              <List size={16} />
-              Inquiry
-              <b>{itemCount}</b>
-            </button>
-          </nav>
-        </div>
-      </header>
+      {page === 'about' && <AboutPage />}
 
-      <main>
-        {page === 'home' && (
-          <Home
-            navigate={navigate}
-            addToCart={addToCart}
-          />
-        )}
+      {page === 'contact' && <ContactPage />}
 
-        {page === 'products' && (
-          <ProductsPage
-            addToCart={addToCart}
-          />
-        )}
-
-        {page === 'inquiry' && (
-          <InquiryPage
-            cart={cart}
-            totals={getTotals(cart)}
-            updateQuantity={updateQuantity}
-            removeItem={removeItem}
-            navigate={navigate}
-          />
-        )}
-
-        {page === 'about' && (
-          <About navigate={navigate} />
-        )}
-
-        {page === 'contact' && <Contact />}
-      </main>
-
-      <footer className="footer">
-        <div>
-          <div className="brand footer-brand">
-            <span className="brand-mark">
-              <Sparkles size={18} />
-            </span>
-
-            <span>
-              {BUSINESS_NAME}
-              <small>
-                Made for brighter celebrations
-              </small>
-            </span>
-          </div>
-
-          <p>
-            Trusted crackers and fireworks for
-            every celebration.
-          </p>
-        </div>
-
-        <div className="footer-links">
-          <button
-            onClick={() =>
-              navigate('products')
-            }
-          >
-            Browse products
-          </button>
-
-          <button
-            onClick={() =>
-              navigate('about')
-            }
-          >
-            About us
-          </button>
-
-          <a
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            WhatsApp us
-          </a>
-        </div>
-
-        <p className="copyright">
-          © 2026 {BUSINESS_NAME}. Prices shown
-          are from our current list.
-        </p>
-      </footer>
-
-      <a
-        className="floating-whatsapp"
-        href={`https://wa.me/${OWNER_WHATSAPP}`}
-        target="_blank"
-        rel="noreferrer"
-      >
-        <MessageCircle size={21} />
-        <span>Chat on WhatsApp</span>
-      </a>
+      <Footer navigate={navigate} />
     </div>
   );
 }
 
-function Home({
+/* =========================
+   HEADER
+========================= */
+
+function Header({
+  page,
   navigate,
+  cartCount,
+}: {
+  page: Page;
+  navigate: (page: Page) => void;
+  cartCount: number;
+}) {
+  return (
+    <header className="site-header">
+      <div className="container header-inner">
+        <button
+          className="brand"
+          onClick={() => navigate('home')}
+        >
+          <span className="brand-icon">✦</span>
+          <span>Sparkle Crackers</span>
+        </button>
+
+        <nav className="main-nav">
+          <button
+            className={page === 'home' ? 'active' : ''}
+            onClick={() => navigate('home')}
+          >
+            Home
+          </button>
+
+          <button
+            className={page === 'products' ? 'active' : ''}
+            onClick={() => navigate('products')}
+          >
+            Products
+          </button>
+
+          <button
+            className={page === 'about' ? 'active' : ''}
+            onClick={() => navigate('about')}
+          >
+            About
+          </button>
+
+          <button
+            className={page === 'contact' ? 'active' : ''}
+            onClick={() => navigate('contact')}
+          >
+            Contact
+          </button>
+        </nav>
+
+        <button
+          className="inquiry-button"
+          onClick={() => navigate('inquiry')}
+        >
+          🛒 Inquiry
+          {cartCount > 0 && (
+            <span className="cart-badge">{cartCount}</span>
+          )}
+        </button>
+      </div>
+    </header>
+  );
+}
+
+/* =========================
+   HOME
+========================= */
+
+function HomePage({
+  navigate,
+  products,
   addToCart,
 }: {
   navigate: (page: Page) => void;
-  addToCart: (
-    id: number,
-    quantity: number
-  ) => void;
+  products: typeof import('./products').products;
+  addToCart: (id: string) => void;
 }) {
-  const featured = products.slice(27, 33);
+  const featured = products.slice(0, 6);
 
   return (
-    <>
+    <main>
       <section className="hero">
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <Sparkles size={15} />
-            Factory price list · 2026
+        <div className="container hero-content">
+          <div className="hero-text">
+            <p className="eyebrow">✨ Celebrate With Sparkle ✨</p>
+
+            <h1>
+              Light Up Your
+              <span> Celebrations</span>
+            </h1>
+
+            <p>
+              Discover quality crackers at special prices.
+              Make every celebration bright, colorful and
+              unforgettable.
+            </p>
+
+            <div className="hero-buttons">
+              <button
+                className="button primary"
+                onClick={() => navigate('products')}
+              >
+                View Products
+              </button>
+
+              <button
+                className="button ghost-light"
+                onClick={() => navigate('inquiry')}
+              >
+                Make an Inquiry
+              </button>
+            </div>
           </div>
 
-          <h1>
-            Light up your
-            <br />
-            <em>celebrations.</em>
-          </h1>
-
-          <p>
-            Bring home the magic of the festival
-            with quality crackers at honest,
-            factory-direct prices.
-          </p>
-
-          <div className="hero-actions">
-            <button
-              className="button primary"
-              onClick={() =>
-                navigate('products')
-              }
-            >
-              View products
-              <ArrowRight size={17} />
-            </button>
-
-            <button
-              className="button ghost-light"
-              onClick={() =>
-                navigate('inquiry')
-              }
-            >
-              Make an inquiry
-            </button>
+          <div className="hero-fireworks">
+            <div className="firework">✦</div>
+            <div className="firework second">✧</div>
+            <div className="firework third">✦</div>
           </div>
-
-          <div className="hero-note">
-            <ShieldCheck size={17} />
-            Quality checked · Packed with care ·
-            Easy WhatsApp ordering
-          </div>
-        </div>
-
-        <div className="hero-art">
-          <div className="burst burst-one">
-            ✦
-          </div>
-
-          <div className="burst burst-two">
-            ✦
-          </div>
-
-          <div className="burst burst-three">
-            ✦
-          </div>
-
-          <div className="rocket rocket-one">
-            <Zap size={38} />
-          </div>
-
-          <div className="rocket rocket-two">
-            <Flame size={30} />
-          </div>
-
-          <div className="hero-card">
-            <span>UP TO</span>
-            <strong>80%</strong>
-            <small>OFF</small>
-          </div>
-        </div>
-      </section>
-
-      <section className="trust-strip">
-        <div>
-          <ShieldCheck />
-
-          <span>
-            <b>Genuine quality</b>
-            <small>
-              Carefully selected products
-            </small>
-          </span>
-        </div>
-
-        <div>
-          <Package />
-
-          <span>
-            <b>Factory pricing</b>
-            <small>
-              More value in every box
-            </small>
-          </span>
-        </div>
-
-        <div>
-          <HeartHandshake />
-
-          <span>
-            <b>Personal service</b>
-            <small>
-              We help you choose
-            </small>
-          </span>
         </div>
       </section>
 
       <section className="section">
-        <div className="section-heading">
-          <div>
-            <span className="kicker">
-              Popular picks
-            </span>
-
-            <h2>
-              Made for memorable nights.
-            </h2>
+        <div className="container">
+          <div className="section-heading">
+            <p className="eyebrow">Our Collection</p>
+            <h2>Featured Products</h2>
+            <p>
+              Choose your favorites and add them to your inquiry list.
+            </p>
           </div>
 
-          <button
-            className="text-button"
-            onClick={() =>
-              navigate('products')
-            }
-          >
-            See all products
-            <ArrowRight size={16} />
-          </button>
-        </div>
+          <div className="product-grid">
+            {featured.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                addToCart={addToCart}
+              />
+            ))}
+          </div>
 
-        <div className="product-grid featured-grid">
-          {featured.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              addToCart={addToCart}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="category-banner">
-        <div>
-          <span className="kicker">
-            One list. Every celebration.
-          </span>
-
-          <h2>
-            From a little sparkle
-            <br />
-            to a sky full of colour.
-          </h2>
-
-          <button
-            className="button primary"
-            onClick={() =>
-              navigate('products')
-            }
-          >
-            Explore the collection
-            <ArrowRight size={17} />
-          </button>
-        </div>
-
-        <div className="category-pills">
-          <span>Ground chakkar</span>
-          <span>Rockets</span>
-          <span>Flower pots</span>
-          <span>Electric sparklers</span>
+          <div className="center-button">
+            <button
+              className="button primary"
+              onClick={() => navigate('products')}
+            >
+              View All Products
+            </button>
+          </div>
         </div>
       </section>
-    </>
+    </main>
   );
 }
 
+/* =========================
+   PRODUCTS
+========================= */
+
 function ProductsPage({
+  products,
   addToCart,
 }: {
-  addToCart: (
-    id: number,
-    quantity: number
-  ) => void;
+  products: typeof import('./products').products;
+  addToCart: (id: string) => void;
 }) {
-  const [search, setSearch] =
-    useState('');
-
-  const [category, setCategory] =
-    useState('All');
-
   const categories = [
     'All',
     ...Array.from(
-      new Set(
-        products.map(
-          (product) => product.category
-        )
-      )
+      new Set(products.map((product) => product.category))
     ),
   ];
 
-  const shown = useMemo(
-    () =>
-      products.filter(
-        (product) =>
-          (category === 'All' ||
-            product.category ===
-              category) &&
-          product.name
-            .toLowerCase()
-            .includes(
-              search.toLowerCase()
-            )
-      ),
-    [category, search]
-  );
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const filteredProducts =
+    selectedCategory === 'All'
+      ? products
+      : products.filter(
+          (product) => product.category === selectedCategory
+        );
 
   return (
-    <section className="section page-section">
-      <div className="page-title">
-        <div>
-          <span className="kicker">
-            The collection
-          </span>
-
-          <h1>
-            Choose your celebration.
-          </h1>
-
+    <main>
+      <section className="page-banner">
+        <div className="container">
+          <p className="eyebrow">Explore Our Collection</p>
+          <h1>Our Products</h1>
           <p>
-            {products.length} products · Market
-            and sale prices shown clearly.
+            Choose from our wide range of quality crackers.
           </p>
         </div>
+      </section>
 
-        <div className="search-box">
-          <Search size={18} />
+      <section className="section">
+        <div className="container">
+          <div className="category-list">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={
+                  selectedCategory === category
+                    ? 'category active'
+                    : 'category'
+                }
+                onClick={() => setSelectedCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
 
-          <input
-            value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
-            placeholder="Search products"
-          />
+          <div className="product-grid">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                addToCart={addToCart}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div className="filter-row">
-        {categories.map((item) => (
-          <button
-            key={item}
-            className={
-              category === item
-                ? 'filter active'
-                : 'filter'
-            }
-            onClick={() =>
-              setCategory(item)
-            }
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <div className="product-grid">
-        {shown.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            addToCart={addToCart}
-          />
-        ))}
-      </div>
-
-      {shown.length === 0 && (
-        <div className="empty-state">
-          <Search size={32} />
-
-          <h3>No products found</h3>
-
-          <p>
-            Try a different search or category.
-          </p>
-        </div>
-      )}
-    </section>
+      </section>
+    </main>
   );
 }
+
+/* =========================
+   PRODUCT CARD
+========================= */
 
 function ProductCard({
   product,
   addToCart,
 }: {
-  product: Product;
-  addToCart: (
-    id: number,
-    quantity: number
-  ) => void;
+  product: (typeof import('./products').products)[number];
+  addToCart: (id: string) => void;
 }) {
-  const [quantity, setQuantity] =
-    useState(1);
-
-  const savings =
-    product.marketPrice -
-    product.salePrice;
-
   return (
     <article className="product-card">
-      <div
-        className={`product-art art-${
-          product.id % 6
-        }`}
-      >
-        <Sparkles size={38} />
-        <span>{product.category}</span>
+      <div className="product-art">
+        <span>✦</span>
+        <small>{product.category}</small>
       </div>
 
       <div className="product-info">
-        <span className="product-category">
-          {product.category}
-        </span>
-
         <h3>{product.name}</h3>
 
-        <div className="prices">
-          <span className="market">
-            Market {money(product.marketPrice)}
-          </span>
-
-          <strong>
-            Sale {money(product.salePrice)}
-          </strong>
-
-          <small>
-            Save {money(savings)}
-          </small>
-        </div>
-
-        <div className="card-actions">
-          <div className="quantity">
-            <button
-              aria-label="Decrease quantity"
-              onClick={() =>
-                setQuantity(
-                  Math.max(
-                    1,
-                    quantity - 1
-                  )
-                )
-              }
-            >
-              <Minus size={14} />
-            </button>
-
-            <span>{quantity}</span>
-
-            <button
-              aria-label="Increase quantity"
-              onClick={() =>
-                setQuantity(quantity + 1)
-              }
-            >
-              <Plus size={14} />
-            </button>
+        <div className="price-row">
+          <div>
+            <span className="price-label">Market Price</span>
+            <span className="market-price">
+              {money(product.marketPrice)}
+            </span>
           </div>
 
-          <button
-            className="add-button"
-            disabled={!product.available}
-            onClick={() =>
-              addToCart(
-                product.id,
-                quantity
-              )
-            }
-          >
-            {product.available
-              ? 'Add to inquiry'
-              : 'Unavailable'}
-          </button>
+          <div>
+            <span className="price-label">Sale Price</span>
+            <span className="sale-price">
+              {money(product.salePrice)}
+            </span>
+          </div>
         </div>
+
+        <div className="save-text">
+          Save {money(product.marketPrice - product.salePrice)}
+        </div>
+
+        <button
+          className="button primary full"
+          onClick={() => addToCart(product.id)}
+        >
+          Add to Inquiry
+        </button>
       </div>
     </article>
   );
 }
 
+/* =========================
+   INQUIRY PAGE
+========================= */
+
 function InquiryPage({
   cart,
+  products,
   totals,
-  updateQuantity,
-  removeItem,
+  changeQuantity,
+  removeFromCart,
   navigate,
 }: {
   cart: CartItem[];
-  totals: Totals;
-  updateQuantity: (
-    id: number,
-    change: number
-  ) => void;
-  removeItem: (id: number) => void;
+  products: typeof import('./products').products;
+  totals: {
+    market: number;
+    sale: number;
+    savings: number;
+  };
+  changeQuantity: (id: string, change: number) => void;
+  removeFromCart: (id: string) => void;
   navigate: (page: Page) => void;
 }) {
-  const [showForm, setShowForm] =
-    useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  if (showForm) {
+    return (
+      <CustomerForm
+        cart={cart}
+        products={products}
+        totals={totals}
+        navigate={navigate}
+      />
+    );
+  }
 
   return (
-    <section className="section page-section">
-      <div className="page-title compact">
-        <div>
-          <span className="kicker">
-            Your selection
-          </span>
-
-          <h1>Inquiry list.</h1>
-
+    <main>
+      <section className="page-banner">
+        <div className="container">
+          <p className="eyebrow">Your Selection</p>
+          <h1>Inquiry List</h1>
           <p>
-            Review your products before sending
-            your request.
+            Review your selected products before sending your inquiry.
           </p>
         </div>
+      </section>
 
-        <div className="inquiry-count">
-          <List size={17} />
+      <section className="section">
+        <div className="container">
+          {cart.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🛒</div>
+              <h2>Your inquiry list is empty</h2>
+              <p>
+                Add products from our collection to make an inquiry.
+              </p>
 
-          {cart.reduce(
-            (sum, item) =>
-              sum + item.quantity,
-            0
-          )}{' '}
-          items
-        </div>
-      </div>
+              <button
+                className="button primary"
+                onClick={() => navigate('products')}
+              >
+                Browse Products
+              </button>
+            </div>
+          ) : (
+            <div className="inquiry-layout">
+              <div className="inquiry-items">
+                {cart.map((item) => {
+                  const product = products.find(
+                    (entry) => entry.id === item.productId
+                  );
 
-      {cart.length === 0 ? (
-        <div className="empty-state cart-empty">
-          <Package size={40} />
+                  if (!product) return null;
 
-          <h3>
-            Your inquiry is empty
-          </h3>
+                  const subtotal =
+                    product.salePrice * item.quantity;
 
-          <p>
-            Add products to see them here and
-            get your total.
-          </p>
-
-          <button
-            className="button primary"
-            onClick={() =>
-              navigate('products')
-            }
-          >
-            Browse products
-            <ArrowRight size={17} />
-          </button>
-        </div>
-      ) : (
-        <div className="inquiry-layout">
-          <div className="inquiry-list">
-            {cart.map((item) => {
-              const product =
-                products.find(
-                  (entry) =>
-                    entry.id ===
-                    item.productId
-                );
-
-              if (!product) return null;
-
-              return (
-                <div
-                  className="inquiry-item"
-                  key={product.id}
-                >
-                  <div
-                    className={`mini-art art-${
-                      product.id % 6
-                    }`}
-                  >
-                    <Sparkles size={22} />
-                  </div>
-
-                  <div className="item-main">
-                    <h3>
-                      {product.name}
-                    </h3>
-
-                    <p>
-                      Market{' '}
-                      {money(
-                        product.marketPrice
-                      )}{' '}
-                      <span>·</span> Sale{' '}
-                      {money(
-                        product.salePrice
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="quantity">
-                    <button
-                      onClick={() =>
-                        updateQuantity(
-                          product.id,
-                          -1
-                        )
-                      }
+                  return (
+                    <div
+                      className="inquiry-item"
+                      key={product.id}
                     >
-                      <Minus size={14} />
-                    </button>
+                      <div className="inquiry-item-info">
+                        <h3>{product.name}</h3>
 
-                    <span>
-                      {item.quantity}
-                    </span>
+                        <div className="inquiry-prices">
+                          <span>
+                            Market: {money(product.marketPrice)}
+                          </span>
 
-                    <button
-                      onClick={() =>
-                        updateQuantity(
-                          product.id,
-                          1
-                        )
-                      }
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
+                          <span>
+                            Sale: {money(product.salePrice)}
+                          </span>
+                        </div>
+                      </div>
 
-                  <strong className="item-subtotal">
-                    {money(
-                      product.salePrice *
-                        item.quantity
-                    )}
-                  </strong>
+                      <div className="quantity-control">
+                        <button
+                          onClick={() =>
+                            changeQuantity(product.id, -1)
+                          }
+                        >
+                          −
+                        </button>
 
-                  <button
-                    className="remove-button"
-                    aria-label={`Remove ${product.name}`}
-                    onClick={() =>
-                      removeItem(
-                        product.id
-                      )
-                    }
-                  >
-                    <Trash2 size={17} />
-                  </button>
+                        <span>{item.quantity}</span>
+
+                        <button
+                          onClick={() =>
+                            changeQuantity(product.id, 1)
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <div className="item-subtotal">
+                        {money(subtotal)}
+                      </div>
+
+                      <button
+                        className="remove-button"
+                        onClick={() =>
+                          removeFromCart(product.id)
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <aside className="summary-card">
+                <h2>Inquiry Summary</h2>
+
+                <div className="summary-row">
+                  <span>Market Price Total</span>
+                  <span>{money(totals.market)}</span>
                 </div>
-              );
-            })}
 
-            <button
-              className="continue-button"
-              onClick={() =>
-                navigate('products')
-              }
-            >
-              <ChevronLeft size={16} />
-              Continue shopping
-            </button>
-          </div>
+                <div className="summary-row">
+                  <span>Sale Price Total</span>
+                  <span>{money(totals.sale)}</span>
+                </div>
 
-          <Summary
-            totals={totals}
-            onProceed={() =>
-              setShowForm(true)
-            }
-          />
+                <div className="summary-row savings">
+                  <span>You Save</span>
+                  <span>{money(totals.savings)}</span>
+                </div>
+
+                <div className="summary-total">
+                  <span>TOTAL</span>
+                  <strong>{money(totals.sale)}</strong>
+                </div>
+
+                <button
+                  className="button primary full"
+                  onClick={() => setShowForm(true)}
+                >
+                  Proceed to Inquiry
+                </button>
+
+                <button
+                  className="button secondary full"
+                  onClick={() => navigate('products')}
+                >
+                  Continue Shopping
+                </button>
+              </aside>
+            </div>
+          )}
         </div>
-      )}
-
-      {showForm && (
-        <CustomerForm
-          cart={cart}
-          totals={totals}
-          onClose={() =>
-            setShowForm(false)
-          }
-        />
-      )}
-    </section>
+      </section>
+    </main>
   );
 }
 
-function Summary({
-  totals,
-  onProceed,
-}: {
-  totals: Totals;
-  onProceed: () => void;
-}) {
-  return (
-    <aside className="summary">
-      <h2>Inquiry summary</h2>
-
-      <div className="summary-line">
-        <span>Market price total</span>
-
-        <strong>
-          {money(totals.market)}
-        </strong>
-      </div>
-
-      <div className="summary-line sale-line">
-        <span>Sale price total</span>
-
-        <strong>
-          {money(totals.sale)}
-        </strong>
-      </div>
-
-      <div className="saving-line">
-        <Check size={15} />
-
-        You save {money(totals.savings)}
-      </div>
-
-      <div className="total-line">
-        <span>Total</span>
-
-        <strong>
-          {money(totals.sale)}
-        </strong>
-      </div>
-
-      <button
-        className="button primary full"
-        onClick={onProceed}
-      >
-        Proceed to inquiry
-        <ArrowRight size={17} />
-      </button>
-
-      <p className="summary-note">
-        No payment required. We’ll prepare
-        your inquiry in WhatsApp.
-      </p>
-    </aside>
-  );
-}
+/* =========================
+   CUSTOMER FORM
+========================= */
 
 function CustomerForm({
   cart,
+  products,
   totals,
-  onClose,
+  navigate,
 }: {
   cart: CartItem[];
-  totals: Totals;
-  onClose: () => void;
+  products: typeof import('./products').products;
+  totals: {
+    market: number;
+    sale: number;
+    savings: number;
+  };
+  navigate: (page: Page) => void;
 }) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CustomerForm>({
     name: '',
     mobile: '',
     area: '',
     message: '',
   });
 
-  const [error, setError] =
-    useState('');
+  const [error, setError] = useState('');
 
-  const submit = (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    const mobile =
-      form.mobile.replace(/\D/g, '');
-
-    if (
-      !form.name.trim() ||
-      !mobile ||
-      !form.area.trim()
-    ) {
-      return setError(
-        'Please complete all required fields.'
-      );
+    if (!form.name.trim()) {
+      setError('Please enter your name.');
+      return;
     }
 
-    if (
-      !/^[6-9]\d{9}$/.test(mobile)
-    ) {
-      return setError(
-        'Enter a valid 10-digit Indian mobile number.'
-      );
+    if (!form.mobile.trim()) {
+      setError('Please enter your mobile number.');
+      return;
     }
+
+    if (!form.area.trim()) {
+      setError('Please enter your area/location.');
+      return;
+    }
+
+    setError('');
 
     /*
-     * WhatsApp product message
-     *
-     * Uses spaces for columns.
-     * Triple backticks make the table
-     * monospace in WhatsApp so the columns
-     * remain vertically aligned.
-     *
-     * Format:
-     *
-     * Name              Qty       Price
-     * Bigili              2        ₹90
-     * 50 DLX              5       ₹220
-     */
+      WhatsApp product table.
+
+      Example:
+
+      Name | Qty | Price
+      2 ¾ Bird | 3 | ₹24
+      3 ½ Lakshmi | 2 | ₹26
+    */
 
     const lines = cart
       .map((item) => {
-        const product =
-          products.find(
-            (entry) =>
-              entry.id ===
-              item.productId
-          );
+        const product = products.find(
+          (entry) => entry.id === item.productId
+        );
 
         if (!product) return '';
 
-        const price =
-          product.salePrice *
-          item.quantity;
+        const price = product.salePrice * item.quantity;
 
-        return `${product.name.padEnd(
-          18,
-          ' '
-        )}${String(
-          item.quantity
-        ).padStart(
-          4,
-          ' '
-        )}${money(price).padStart(
-          12,
-          ' '
-        )}`;
+        return `${product.name} | ${item.quantity} | ${money(price)}`;
       })
       .filter(Boolean)
       .join('\n');
+
+    const mobile = form.mobile.trim();
 
     const text = `NEW CRACKERS INQUIRY
 
@@ -1118,10 +689,8 @@ Area: ${form.area.trim()}
 
 Selected Products
 ----------------
-\`\`\`
-Name              Qty       Price
+Name | Qty | Price
 ${lines}
-\`\`\`
 
 ----------------
 TOTAL: ${money(totals.sale)}
@@ -1132,350 +701,295 @@ ${form.message.trim() || 'None'}
 Thank you.`;
 
     window.open(
-      `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
-        text
-      )}`,
+      `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(text)}`,
       '_blank',
       'noopener,noreferrer'
     );
   };
 
   return (
-    <div
-      className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-    >
-      <form
-        className="details-form"
-        onSubmit={submit}
-      >
-        <button
-          type="button"
-          className="close-button"
-          onClick={onClose}
-        >
-          <X size={20} />
-        </button>
-
-        <span className="kicker">
-          Almost there
-        </span>
-
-        <h2>Customer details.</h2>
-
-        <p>
-          We’ll open WhatsApp only after you
-          submit these details.
-        </p>
-
-        <label>
-          Name *
-          <input
-            required
-            value={form.name}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                name: event.target.value,
-              })
-            }
-            placeholder="Your full name"
-          />
-        </label>
-
-        <label>
-          Mobile number *
-          <input
-            required
-            inputMode="numeric"
-            value={form.mobile}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                mobile:
-                  event.target.value,
-              })
-            }
-            placeholder="10-digit mobile number"
-          />
-        </label>
-
-        <label>
-          Area / location *
-          <input
-            required
-            value={form.area}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                area: event.target.value,
-              })
-            }
-            placeholder="Where should we reach you?"
-          />
-        </label>
-
-        <label>
-          Additional message
-          <textarea
-            value={form.message}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                message:
-                  event.target.value,
-              })
-            }
-            placeholder="Any preferences or questions?"
-            rows={3}
-          />
-        </label>
-
-        {error && (
-          <p className="form-error">
-            {error}
+    <main>
+      <section className="page-banner">
+        <div className="container">
+          <p className="eyebrow">Almost Done</p>
+          <h1>Customer Details</h1>
+          <p>
+            Enter your details before sending your inquiry.
           </p>
-        )}
+        </div>
+      </section>
 
-        <button
-          className="button primary full"
-          type="submit"
-        >
-          <MessageCircle size={18} />
-          Submit inquiry on WhatsApp
-        </button>
-      </form>
-    </div>
+      <section className="section">
+        <div className="container form-container">
+          <form
+            className="customer-form"
+            onSubmit={handleSubmit}
+          >
+            <div className="form-group">
+              <label htmlFor="name">
+                Name <span>*</span>
+              </label>
+
+              <input
+                id="name"
+                type="text"
+                placeholder="Enter your name"
+                value={form.name}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    name: event.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="mobile">
+                Mobile Number <span>*</span>
+              </label>
+
+              <input
+                id="mobile"
+                type="tel"
+                placeholder="Enter your mobile number"
+                value={form.mobile}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    mobile: event.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="area">
+                Area / Location <span>*</span>
+              </label>
+
+              <input
+                id="area"
+                type="text"
+                placeholder="Enter your area or location"
+                value={form.area}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    area: event.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="message">
+                Additional Message
+              </label>
+
+              <textarea
+                id="message"
+                rows={4}
+                placeholder="Any additional requirements..."
+                value={form.message}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    message: event.target.value,
+                  })
+                }
+              />
+            </div>
+
+            {error && (
+              <div className="form-error">
+                {error}
+              </div>
+            )}
+
+            <div className="form-total">
+              <span>Total</span>
+              <strong>{money(totals.sale)}</strong>
+            </div>
+
+            <button
+              type="submit"
+              className="button whatsapp-button full"
+            >
+              💬 Submit Inquiry on WhatsApp
+            </button>
+
+            <button
+              type="button"
+              className="button secondary full"
+              onClick={() => navigate('inquiry')}
+            >
+              Back to Inquiry List
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
   );
 }
 
-function About({
+/* =========================
+   ABOUT
+========================= */
+
+function AboutPage() {
+  return (
+    <main>
+      <section className="page-banner">
+        <div className="container">
+          <p className="eyebrow">Know More</p>
+          <h1>About Us</h1>
+          <p>
+            Making your celebrations brighter and more memorable.
+          </p>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container about-content">
+          <div>
+            <p className="eyebrow">About Sparkle Crackers</p>
+
+            <h2>
+              Quality crackers for every celebration
+            </h2>
+
+            <p>
+              We provide a wide range of crackers for festivals,
+              celebrations and special occasions.
+            </p>
+
+            <p>
+              Our goal is to make your shopping experience simple,
+              convenient and transparent by displaying both market
+              prices and special sale prices.
+            </p>
+
+            <p>
+              Select your products, choose quantities and send your
+              inquiry directly through WhatsApp.
+            </p>
+          </div>
+
+          <div className="about-highlight">
+            <div>
+              <strong>Quality</strong>
+              <span>Carefully selected products</span>
+            </div>
+
+            <div>
+              <strong>Value</strong>
+              <span>Special sale prices</span>
+            </div>
+
+            <div>
+              <strong>Easy</strong>
+              <span>Simple WhatsApp inquiry</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+/* =========================
+   CONTACT
+========================= */
+
+function ContactPage() {
+  return (
+    <main>
+      <section className="page-banner">
+        <div className="container">
+          <p className="eyebrow">Get In Touch</p>
+          <h1>Contact Us</h1>
+          <p>
+            Have a question? We are happy to help.
+          </p>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container contact-grid">
+          <div className="contact-card">
+            <div className="contact-icon">📱</div>
+            <h3>WhatsApp</h3>
+            <p>
+              Send your product inquiry directly through WhatsApp.
+            </p>
+          </div>
+
+          <div className="contact-card">
+            <div className="contact-icon">📍</div>
+            <h3>Location</h3>
+            <p>
+              Contact us for our current location and delivery
+              details.
+            </p>
+          </div>
+
+          <div className="contact-card">
+            <div className="contact-icon">⏰</div>
+            <h3>Support</h3>
+            <p>
+              We are available to help with your product inquiries.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+function Footer({
   navigate,
 }: {
   navigate: (page: Page) => void;
 }) {
   return (
-    <section className="section page-section about-page">
-      <div className="about-hero">
+    <footer className="site-footer">
+      <div className="container footer-inner">
         <div>
-          <span className="kicker">
-            Our story
-          </span>
-
-          <h1>
-            Bringing joy to your
-            celebrations.
-          </h1>
-
+          <h3>✨ Sparkle Crackers</h3>
           <p>
-            Iniyan Crackers brings you a wide
-            range of quality fireworks at factory
-            prices, so every family can celebrate
-            with confidence.
+            Light up your celebrations with quality crackers.
           </p>
         </div>
 
-        <div className="about-seal">
-          <Sparkles size={30} />
+        <div className="footer-links">
+          <button onClick={() => navigate('home')}>
+            Home
+          </button>
 
-          <span>
-            Since
-            <br />
-            <b>2026</b>
-          </span>
+          <button onClick={() => navigate('products')}>
+            Products
+          </button>
+
+          <button onClick={() => navigate('about')}>
+            About
+          </button>
+
+          <button onClick={() => navigate('contact')}>
+            Contact
+          </button>
         </div>
       </div>
 
-      <div className="values-grid">
-        <Value
-          icon={<ShieldCheck />}
-          title="Quality first"
-          text="Every product is selected with care for a bright, dependable celebration."
-        />
-
-        <Value
-          icon={<HeartHandshake />}
-          title="Helpful service"
-          text="Tell us what you need and we’ll help you build the right inquiry."
-        />
-
-        <Value
-          icon={<Package />}
-          title="More variety"
-          text="From sparklers and flower pots to rockets and repeating cakes."
-        />
+      <div className="footer-bottom">
+        © {new Date().getFullYear()} Sparkle Crackers. All rights
+        reserved.
       </div>
-
-      <div className="about-callout">
-        <div>
-          <span className="kicker">
-            Ready to celebrate?
-          </span>
-
-          <h2>
-            Make your list.
-            <br />
-            We’ll take it from there.
-          </h2>
-        </div>
-
-        <button
-          className="button primary"
-          onClick={() =>
-            navigate('products')
-          }
-        >
-          Browse products
-          <ArrowRight size={17} />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function Value({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="value-card">
-      <div className="value-icon">
-        {icon}
-      </div>
-
-      <h3>{title}</h3>
-
-      <p>{text}</p>
-    </div>
-  );
-}
-
-function Contact() {
-  return (
-    <section className="section page-section contact-page">
-      <div className="page-title">
-        <div>
-          <span className="kicker">
-            We’re here to help
-          </span>
-
-          <h1>Contact us.</h1>
-
-          <p>
-            Have a question about a product or
-            your inquiry? Reach out.
-          </p>
-        </div>
-      </div>
-
-      <div className="contact-grid">
-        <div className="contact-card">
-          <ContactRow
-            icon={<Phone />}
-            title="Call us"
-            value={BUSINESS_PHONE}
-            href={`tel:${BUSINESS_PHONE.replace(
-              /\s/g,
-              ''
-            )}`}
-          />
-
-          <ContactRow
-            icon={<MessageCircle />}
-            title="WhatsApp"
-            value="Chat with our team"
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
-          />
-
-          <ContactRow
-            icon={<MapPin />}
-            title="Our area"
-            value={BUSINESS_AREA}
-          />
-
-          <ContactRow
-            icon={<Clock3 />}
-            title="Business hours"
-            value={BUSINESS_HOURS}
-          />
-        </div>
-
-        <div className="contact-panel">
-          <Sparkles size={32} />
-
-          <h2>
-            Let’s make your celebration
-            brighter.
-          </h2>
-
-          <p>
-            Send us your product list through
-            WhatsApp and we’ll get back to you
-            with the details.
-          </p>
-
-          <a
-            className="button primary"
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <MessageCircle size={17} />
-            Chat on WhatsApp
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ContactRow({
-  icon,
-  title,
-  value,
-  href,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  href?: string;
-}) {
-  const content = (
-    <>
-      <div className="contact-icon">
-        {icon}
-      </div>
-
-      <div>
-        <span>{title}</span>
-        <strong>{value}</strong>
-      </div>
-    </>
-  );
-
-  return href ? (
-    <a
-      className="contact-row"
-      href={href}
-      target={
-        href.startsWith('https')
-          ? '_blank'
-          : undefined
-      }
-      rel="noreferrer"
-    >
-      {content}
-    </a>
-  ) : (
-    <div className="contact-row">
-      {content}
-    </div>
+    </footer>
   );
 }
 
