@@ -207,16 +207,6 @@ function App() {
             </span>
           </button>
 
-          <button
-            className="menu-toggle"
-            onClick={() =>
-              setMenuOpen(!menuOpen)
-            }
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </button>
-
           <nav
             className={
               menuOpen
@@ -245,18 +235,29 @@ function App() {
                   item.slice(1)}
               </button>
             ))}
-
-            <button
-              className="nav-inquiry"
-              onClick={() =>
-                navigate('inquiry')
-              }
-            >
-              <List size={16} />
-              Inquiry
-              <b>{itemCount}</b>
-            </button>
           </nav>
+
+          {/* Inquiry button - always visible */}
+          <button
+            className="nav-inquiry"
+            onClick={() =>
+              navigate('inquiry')
+            }
+          >
+            <List size={16} />
+            Inquiry
+            <b>{itemCount}</b>
+          </button>
+
+          <button
+            className="menu-toggle"
+            onClick={() =>
+              setMenuOpen(!menuOpen)
+            }
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X /> : <Menu />}
+          </button>
         </div>
       </header>
 
