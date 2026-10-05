@@ -42,7 +42,12 @@ type Totals = {
   savings: number;
 };
 
-type Page = 'home' | 'products' | 'inquiry' | 'about' | 'contact';
+type Page =
+  | 'home'
+  | 'products'
+  | 'inquiry'
+  | 'about'
+  | 'contact';
 
 const money = (value: number) =>
   `₹${value.toLocaleString('en-IN')}`;
@@ -50,7 +55,13 @@ const money = (value: number) =>
 const getPage = (): Page => {
   const page = window.location.hash.replace('#/', '') as Page;
 
-  return ['home', 'products', 'inquiry', 'about', 'contact'].includes(page)
+  return [
+    'home',
+    'products',
+    'inquiry',
+    'about',
+    'contact',
+  ].includes(page)
     ? page
     : 'home';
 };
@@ -112,7 +123,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(cart)
+    );
   }, [cart]);
 
   const itemCount = cart.reduce(
@@ -561,6 +575,7 @@ function ProductsPage({
 }) {
   const [search, setSearch] =
     useState('');
+
   const [category, setCategory] =
     useState('All');
 
@@ -687,9 +702,12 @@ function ProductCard({
       <div
         className={`product-art art-${
           product.id % 6
-        }`}
+        } category-${product.category
+          .toLowerCase()
+          .replace(/\s+/g, '-')}`}
       >
         <Sparkles size={38} />
+
         <span>{product.category}</span>
       </div>
 
@@ -1100,7 +1118,9 @@ ${lines}
 💰 TOTAL: ${money(totals.sale)}
 
 📝 ADDITIONAL MESSAGE
-${form.message.trim() || 'None'}`;
+${form.message.trim() || 'None'}
+
+Thank you for your inquiry! 🙏`;
 
     window.open(
       `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
