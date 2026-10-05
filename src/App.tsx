@@ -1100,9 +1100,7 @@ ${lines}
 💰 TOTAL: ${money(totals.sale)}
 
 📝 ADDITIONAL MESSAGE
-${form.message.trim() || 'None'}
-
-Thank you for your inquiry! 🙏`;
+${form.message.trim() || 'None'}`;
 
     window.open(
       `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
