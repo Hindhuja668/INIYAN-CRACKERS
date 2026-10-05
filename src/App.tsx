@@ -1061,54 +1061,47 @@ function CustomerForm({
 
     /*
      * WhatsApp product message
-     *
-     * Table format:
-     *
-     * Name | Qty | Price
-     * Bigili | 2 | ₹90
-     * 50 DLX | 5 | ₹220
      */
 
     const lines = cart
-      .map((item) => {
+      .map((item, index) => {
         const product =
           products.find(
             (entry) =>
-              entry.id ===
-              item.productId
+              entry.id === item.productId
           );
 
         if (!product) return '';
 
         const price =
-          product.salePrice *
-          item.quantity;
+          product.salePrice * item.quantity;
 
-        return `${product.name} | ${item.quantity} | ${money(price)}`;
+        return `${index + 1}. ${product.name}
+   Qty: ${item.quantity}
+   Amount: ${money(price)}`;
       })
       .filter(Boolean)
-      .join('\n');
+      .join('\n\n');
 
-    const text = `NEW CRACKERS INQUIRY
+    const text = `🎆 NEW CRACKERS INQUIRY
 
-Customer Details
-----------------
+👤 CUSTOMER DETAILS
+━━━━━━━━━━━━━━━━━━
 Name: ${form.name.trim()}
 Mobile: ${mobile}
 Area: ${form.area.trim()}
 
-Selected Products
-----------------
-Name | Qty | Price
+🛍️ SELECTED PRODUCTS
+━━━━━━━━━━━━━━━━━━
 ${lines}
 
-----------------
-TOTAL: ${money(totals.sale)}
+━━━━━━━━━━━━━━━━━━
+💰 TOTAL: ${money(totals.sale)}
 
-Additional Message:
+📝 ADDITIONAL MESSAGE
 ${form.message.trim() || 'None'}
 
-Thank you.`;
+Thank you for your inquiry! 🙏`;
 
     window.open(
       `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
