@@ -1083,7 +1083,7 @@ function CustomerForm({
      */
 
     const lines = cart
-      .map((item, index) => {
+      .map((item) => {
         const product =
           products.find(
             (entry) =>
@@ -1095,32 +1095,22 @@ function CustomerForm({
         const price =
           product.salePrice * item.quantity;
 
-        return `${index + 1}. ${product.name}
-   Qty: ${item.quantity}
-   Amount: ${money(price)}`;
+        return `• ${product.name} — Qty: ${item.quantity} — Price: ${money(price)}`;
       })
       .filter(Boolean)
       .join('\n\n');
 
-    const text = `🎆 NEW CRACKERS INQUIRY
+    const text = `Hello ${BUSINESS_NAME}
 
-👤 CUSTOMER DETAILS
-━━━━━━━━━━━━━━━━━━
 Name: ${form.name.trim()}
-Mobile: ${mobile}
+
+Contact: ${mobile}
+
 Area: ${form.area.trim()}
 
-🛍️ SELECTED PRODUCTS
-━━━━━━━━━━━━━━━━━━
 ${lines}
 
-━━━━━━━━━━━━━━━━━━
-💰 TOTAL: ${money(totals.sale)}
-
-📝 ADDITIONAL MESSAGE
-${form.message.trim() || 'None'}
-
-Thank you for your inquiry! 🙏`;
+Total Price: ${money(totals.sale)}`;
 
     window.open(
       `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
