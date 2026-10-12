@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { jsPDF } from 'jspdf';
@@ -21,9 +20,11 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
+  Tag,
   X,
   Zap,
 } from 'lucide-react';
+
 import {
   BUSINESS_AREA,
   BUSINESS_HOURS,
@@ -32,10 +33,16 @@ import {
   OWNER_WHATSAPP,
   STORAGE_KEY,
 } from '@/config';
+
 import { products, type Product } from '@/products';
 
 type CartItem = {
   productId: number;
+  quantity: number;
+};
+
+type CartProduct = {
+  product: Product;
   quantity: number;
 };
 
@@ -72,7 +79,7 @@ const getPage = (): Page => {
 const readCart = (): CartItem[] => {
   try {
     return JSON.parse(
-      localStorage.getItem(STORAGE_KEY) || '[]'
+      localStorage.getItem(STORAGE_KEY) || '[]',
     ) as CartItem[];
   } catch {
     return [];
@@ -83,7 +90,7 @@ const getTotals = (cart: CartItem[]): Totals =>
   cart.reduce(
     (total, item) => {
       const product = products.find(
-        (entry) => entry.id === item.productId
+        (entry) => entry.id === item.productId,
       );
 
       if (!product) return total;
@@ -105,7 +112,7 @@ const getTotals = (cart: CartItem[]): Totals =>
       market: 0,
       sale: 0,
       savings: 0,
-    }
+    },
   );
 
 function App() {
@@ -115,6 +122,7 @@ function App() {
 
   useEffect(() => {
     const onHash = () => setPage(getPage());
+
     window.addEventListener('hashchange', onHash);
 
     return () => {
@@ -128,7 +136,7 @@ function App() {
 
   const itemCount = cart.reduce(
     (sum, item) => sum + item.quantity,
-    0
+    0,
   );
 
   const navigate = (next: Page) => {
@@ -144,9 +152,9 @@ function App() {
         ? current.map((item) =>
             item.productId === productId
               ? { ...item, quantity: item.quantity + quantity }
-              : item
+              : item,
           )
-        : [...current, { productId, quantity }]
+        : [...current, { productId, quantity }],
     );
   };
 
@@ -157,15 +165,15 @@ function App() {
         item.quantity + change <= 0
           ? []
           : item.productId === productId
-          ? [{ ...item, quantity: item.quantity + change }]
-          : [item]
-      )
+            ? [{ ...item, quantity: item.quantity + change }]
+            : [item],
+      ),
     );
   };
 
   const removeItem = (productId: number) => {
     setCart((current) =>
-      current.filter((item) => item.productId !== productId)
+      current.filter((item) => item.productId !== productId),
     );
   };
 
@@ -180,6 +188,7 @@ function App() {
             <span className="brand-mark">
               <Sparkles size={18} />
             </span>
+
             <span>
               {BUSINESS_NAME}
               <small>Quality fireworks & crackers</small>
@@ -196,7 +205,7 @@ function App() {
                 >
                   {item[0].toUpperCase() + item.slice(1)}
                 </button>
-              )
+              ),
             )}
           </nav>
 
@@ -238,8 +247,8 @@ function App() {
           />
         )}
 
-        {page === 'about' && <About navigate={navigate} />}
-        {page === 'contact' && <Contact />}
+        {page === 'about' && <AboutPage />}
+        {page === 'contact' && <ContactPage />}
       </main>
 
       <footer className="footer">
@@ -248,11 +257,13 @@ function App() {
             <span className="brand-mark">
               <Sparkles size={18} />
             </span>
+
             <span>
               {BUSINESS_NAME}
               <small>Made for brighter celebrations</small>
             </span>
           </div>
+
           <p>
             Trusted crackers and fireworks for every celebration.
           </p>
@@ -262,11 +273,13 @@ function App() {
           <button onClick={() => navigate('products')}>
             Browse products
           </button>
+
           <button onClick={() => navigate('about')}>
             About us
           </button>
+
           <a
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
+            href={`https://wa.me/${OWNER_WHATSAPP.replace(/\D/g, '')}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -281,7 +294,7 @@ function App() {
 
       <a
         className="floating-whatsapp"
-        href={`https://wa.me/${OWNER_WHATSAPP}`}
+        href={`https://wa.me/${OWNER_WHATSAPP.replace(/\D/g, '')}`}
         target="_blank"
         rel="noreferrer"
       >
@@ -290,8 +303,7 @@ function App() {
       </a>
     </div>
   );
-}
-
+  
 function Home({
   navigate,
   addToCart,
@@ -329,6 +341,7 @@ function Home({
               View products
               <ArrowRight size={17} />
             </button>
+
             <button
               className="button ghost-light"
               onClick={() => navigate('inquiry')}
@@ -347,12 +360,15 @@ function Home({
           <div className="burst burst-one">✦</div>
           <div className="burst burst-two">✦</div>
           <div className="burst burst-three">✦</div>
+
           <div className="rocket rocket-one">
             <Zap size={38} />
           </div>
+
           <div className="rocket rocket-two">
             <Flame size={30} />
           </div>
+
           <div className="hero-card">
             <span>UP TO</span>
             <strong>80%</strong>
@@ -369,6 +385,7 @@ function Home({
             <small>Carefully selected products</small>
           </span>
         </div>
+
         <div>
           <Package />
           <span>
@@ -376,6 +393,7 @@ function Home({
             <small>More value in every box</small>
           </span>
         </div>
+
         <div>
           <HeartHandshake />
           <span>
@@ -391,6 +409,7 @@ function Home({
             <span className="kicker">Popular picks</span>
             <h2>Made for memorable nights.</h2>
           </div>
+
           <button
             className="text-button"
             onClick={() => navigate('products')}
@@ -414,11 +433,13 @@ function Home({
       <section className="category-banner">
         <div>
           <span className="kicker">One list. Every celebration.</span>
+
           <h2>
             From a little sparkle
             <br />
             to a sky full of colour.
           </h2>
+
           <button
             className="button primary"
             onClick={() => navigate('products')}
@@ -449,9 +470,7 @@ function ProductsPage({
 
   const categories = [
     'All',
-    ...Array.from(
-      new Set(products.map((product) => product.category))
-    ),
+    ...Array.from(new Set(products.map((product) => product.category))),
   ];
 
   const shown = useMemo(
@@ -459,9 +478,9 @@ function ProductsPage({
       products.filter(
         (product) =>
           (category === 'All' || product.category === category) &&
-          product.name.toLowerCase().includes(search.toLowerCase())
+          product.name.toLowerCase().includes(search.toLowerCase()),
       ),
-    [category, search]
+    [category, search],
   );
 
   return (
@@ -547,6 +566,7 @@ function ProductCard({
           <span className="market">
             Market {money(product.marketPrice)}
           </span>
+
           <strong>Sale {money(product.salePrice)}</strong>
           <small>Save {money(savings)}</small>
         </div>
@@ -598,6 +618,14 @@ function InquiryPage({
 }) {
   const [showForm, setShowForm] = useState(false);
 
+  const cartProducts: CartProduct[] = cart.flatMap((item) => {
+    const product = products.find(
+      (entry) => entry.id === item.productId,
+    );
+
+    return product ? [{ product, quantity: item.quantity }] : [];
+  });
+
   return (
     <section className="section page-section">
       <div className="page-title compact">
@@ -613,7 +641,7 @@ function InquiryPage({
         </div>
       </div>
 
-      {cart.length === 0 ? (
+      {cartProducts.length === 0 ? (
         <div className="empty-state cart-empty">
           <Package size={40} />
           <h3>Your inquiry is empty</h3>
@@ -630,59 +658,51 @@ function InquiryPage({
       ) : (
         <div className="inquiry-layout">
           <div className="inquiry-list">
-            {cart.map((item) => {
-              const product = products.find(
-                (entry) => entry.id === item.productId
-              );
+            {cartProducts.map(({ product, quantity }) => (
+              <div className="inquiry-item" key={product.id}>
+                <div className={`mini-art art-${product.id % 6}`}>
+                  <Sparkles size={22} />
+                </div>
 
-              if (!product) return null;
+                <div className="item-main">
+                  <h3>{product.name}</h3>
+                  <p>
+                    Market {money(product.marketPrice)}{' '}
+                    <span>·</span> Sale {money(product.salePrice)}
+                  </p>
+                </div>
 
-              return (
-                <div className="inquiry-item" key={product.id}>
-                  <div className={`mini-art art-${product.id % 6}`}>
-                    <Sparkles size={22} />
-                  </div>
+                <div className="quantity">
+                  <button
+                    onClick={() => updateQuantity(product.id, -1)}
+                    aria-label={`Decrease ${product.name} quantity`}
+                  >
+                    <Minus size={14} />
+                  </button>
 
-                  <div className="item-main">
-                    <h3>{product.name}</h3>
-                    <p>
-                      Market {money(product.marketPrice)}{' '}
-                      <span>·</span> Sale {money(product.salePrice)}
-                    </p>
-                  </div>
-
-                  <div className="quantity">
-                    <button
-                      onClick={() => updateQuantity(product.id, -1)}
-                      aria-label={`Decrease ${product.name} quantity`}
-                    >
-                      <Minus size={14} />
-                    </button>
-
-                    <span>{item.quantity}</span>
-
-                    <button
-                      onClick={() => updateQuantity(product.id, 1)}
-                      aria-label={`Increase ${product.name} quantity`}
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-
-                  <strong className="item-subtotal">
-                    {money(product.salePrice * item.quantity)}
-                  </strong>
+                  <span>{quantity}</span>
 
                   <button
-                    className="remove-button"
-                    aria-label={`Remove ${product.name}`}
-                    onClick={() => removeItem(product.id)}
+                    onClick={() => updateQuantity(product.id, 1)}
+                    aria-label={`Increase ${product.name} quantity`}
                   >
-                    <Trash2 size={17} />
+                    <Plus size={14} />
                   </button>
                 </div>
-              );
-            })}
+
+                <strong className="item-subtotal">
+                  {money(product.salePrice * quantity)}
+                </strong>
+
+                <button
+                  className="remove-button"
+                  aria-label={`Remove ${product.name}`}
+                  onClick={() => removeItem(product.id)}
+                >
+                  <Trash2 size={17} />
+                </button>
+              </div>
+            ))}
 
             <button
               className="continue-button"
@@ -702,7 +722,7 @@ function InquiryPage({
 
       {showForm && (
         <CustomerForm
-          cart={cart}
+          cart={cartProducts}
           totals={totals}
           onClose={() => setShowForm(false)}
         />
@@ -755,14 +775,15 @@ function Summary({
       </p>
     </aside>
   );
-}
+              }
+      }
 
 function CustomerForm({
   cart,
   totals,
   onClose,
 }: {
-  cart: CartItem[];
+  cart: CartProduct[];
   totals: Totals;
   onClose: () => void;
 }) {
@@ -774,14 +795,18 @@ function CustomerForm({
   });
 
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
 
+    const name = form.name.trim();
     const mobile = form.mobile.replace(/\D/g, '');
+    const area = form.area.trim();
+    const message = form.message.trim();
 
-    if (!form.name.trim() || !mobile || !form.area.trim()) {
+    if (!name || !mobile || !area) {
       setError('Please fill in your name, mobile number and area.');
       return;
     }
@@ -791,241 +816,241 @@ function CustomerForm({
       return;
     }
 
-    const invoiceId = `INI-${Date.now().toString().slice(-6)}`;
-    const invoiceDate = new Date().toLocaleDateString('en-IN');
+    const ownerNumber = OWNER_WHATSAPP.replace(/\D/g, '');
 
-    const doc = new jsPDF({
-      unit: 'mm',
-      format: 'a4',
-    });
+    if (!ownerNumber) {
+      setError('WhatsApp number is not configured. Please contact the shop.');
+      return;
+    }
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 14;
-    const right = pageWidth - margin;
+    setSubmitting(true);
 
-    const drawTableHeader = (y: number) => {
-      doc.setFillColor(255, 237, 213);
-      doc.rect(margin, y, pageWidth - margin * 2, 9, 'F');
+    try {
+      const invoiceId = `INI-${Date.now().toString().slice(-6)}`;
+      const invoiceDate = new Date().toLocaleDateString('en-IN');
+
+      const doc = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 14;
+      const right = pageWidth - margin;
+
+      const drawTableHeader = (y: number) => {
+        doc.setFillColor(255, 237, 213);
+        doc.rect(margin, y, pageWidth - margin * 2, 9, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(80, 50, 30);
+
+        doc.text('Product', margin + 2, y + 6);
+        doc.text('Qty', right - 62, y + 6, { align: 'right' });
+        doc.text('Market', right - 40, y + 6, { align: 'right' });
+        doc.text('Sale', right - 21, y + 6, { align: 'right' });
+        doc.text('Total', right - 2, y + 6, { align: 'right' });
+      };
+
+      // Invoice header
+      doc.setFillColor(255, 247, 237);
+      doc.rect(0, 0, pageWidth, 47, 'F');
+
+      doc.setTextColor(124, 45, 18);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(21);
+      doc.text(BUSINESS_NAME, margin, 17);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(BUSINESS_AREA, margin, 25);
+      doc.text(`Phone: ${BUSINESS_PHONE}`, margin, 32);
 
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('INQUIRY INVOICE', right, 17, {
+        align: 'right',
+      });
+
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(80, 50, 30);
+      doc.text(`Invoice: ${invoiceId}`, right, 25, {
+        align: 'right',
+      });
+      doc.text(`Date: ${invoiceDate}`, right, 32, {
+        align: 'right',
+      });
 
-      doc.text('Product', margin + 2, y + 6);
-      doc.text('Qty', right - 57, y + 6, { align: 'right' });
-      doc.text('Market', right - 36, y + 6, { align: 'right' });
-      doc.text('Sale', right - 19, y + 6, { align: 'right' });
-      doc.text('Total', right - 2, y + 6, { align: 'right' });
-    };
+      // Customer details
+      let y = 58;
 
-    // Invoice heading
-    doc.setFillColor(255, 247, 237);
-    doc.rect(0, 0, pageWidth, 47, 'F');
+      doc.setTextColor(40, 40, 40);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Customer Details', margin, y);
 
-    doc.setTextColor(124, 45, 18);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text(BUSINESS_NAME, margin, 17);
+      y += 8;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(BUSINESS_AREA, margin, 25);
-    doc.text(`Phone: ${BUSINESS_PHONE}`, margin, 32);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Name: ${name}`, margin, y);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('INQUIRY INVOICE', right, 17, { align: 'right' });
+      y += 6;
+      doc.text(`Mobile: ${mobile}`, margin, y);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text(`Invoice: ${invoiceId}`, right, 25, { align: 'right' });
-    doc.text(`Date: ${invoiceDate}`, right, 32, { align: 'right' });
+      y += 6;
+      doc.text(`Area: ${area}`, margin, y);
 
-    // Customer details
-    let y = 58;
+      y += 12;
+      drawTableHeader(y);
+      y += 14;
 
-    doc.setTextColor(40, 40, 40);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Customer Details', margin, y);
+      // Product rows
+      cart.forEach(({ product, quantity }) => {
+        const nameLines = doc.splitTextToSize(product.name, 68);
+        const rowHeight = Math.max(8, nameLines.length * 4.5 + 2);
 
-    y += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Name: ${form.name.trim()}`, margin, y);
-
-    y += 6;
-    doc.text(`Mobile: ${mobile}`, margin, y);
-
-    y += 6;
-    doc.text(`Area: ${form.area.trim()}`, margin, y);
-
-    y += 12;
-
-    // Product table
-    drawTableHeader(y);
-    y += 14;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(45, 45, 45);
-
-    cart.forEach((item) => {
-      const productName = item.product.name;
-      const nameLines = doc.splitTextToSize(productName, 70);
-      const rowHeight = Math.max(8, nameLines.length * 4.5 + 2);
-
-      if (y + rowHeight > pageHeight - 45) {
-        doc.addPage();
-        y = 18;
-        drawTableHeader(y);
-        y += 14;
+        if (y + rowHeight > pageHeight - 42) {
+          doc.addPage();
+          y = 18;
+          drawTableHeader(y);
+          y += 14;
+        }
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-      }
+        doc.setTextColor(45, 45, 45);
 
-      doc.text(nameLines, margin + 2, y);
+        doc.text(nameLines, margin + 2, y);
 
-      doc.text(String(item.quantity), right - 57, y, {
-        align: 'right',
+        doc.text(String(quantity), right - 62, y, {
+          align: 'right',
+        });
+
+        doc.text(money(product.marketPrice), right - 40, y, {
+          align: 'right',
+        });
+
+        doc.text(money(product.salePrice), right - 21, y, {
+          align: 'right',
+        });
+
+        doc.text(
+          money(product.salePrice * quantity),
+          right - 2,
+          y,
+          { align: 'right' },
+        );
+
+        y += rowHeight;
+
+        doc.setDrawColor(235, 235, 235);
+        doc.line(margin, y - 2, right, y - 2);
       });
 
-      doc.text(money(item.product.marketPrice), right - 36, y, {
-        align: 'right',
-      });
-
-      doc.text(money(item.product.salePrice), right - 19, y, {
-        align: 'right',
-      });
-
-      doc.text(
-        money(item.product.salePrice * item.quantity),
-        right - 2,
-        y,
-        { align: 'right' },
-      );
-
-      y += rowHeight;
-
-      doc.setDrawColor(235, 235, 235);
-      doc.line(margin, y - 2, right, y - 2);
-    });
-
-    // Start totals on a new page if there is not enough room
-    if (y + 45 > pageHeight - 15) {
-      doc.addPage();
-      y = 20;
-    }
-
-    y += 5;
-
-    const totalLine = (label: string, amount: number, bold = false) => {
-      doc.setFont('helvetica', bold ? 'bold' : 'normal');
-      doc.setFontSize(bold ? 11 : 10);
-      doc.setTextColor(55, 55, 55);
-      doc.text(label, right - 65, y);
-      doc.text(money(amount), right, y, { align: 'right' });
-      y += bold ? 8 : 6;
-    };
-
-    totalLine('Market Price Total', totals.market);
-    totalLine('You Save', totals.savings);
-    totalLine('Sale Price Total', totals.sale, true);
-
-    // Optional customer message
-    if (form.message.trim()) {
-      y += 5;
-
-      if (y + 20 > pageHeight - 15) {
+      // Totals
+      if (y + 42 > pageHeight - 12) {
         doc.addPage();
         y = 20;
       }
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text('Additional Message', margin, y);
+      y += 5;
 
-      y += 6;
-      doc.setFont('helvetica', 'normal');
+      const addTotal = (
+        label: string,
+        amount: number,
+        bold = false,
+      ) => {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setFontSize(bold ? 11 : 10);
+        doc.setTextColor(55, 55, 55);
 
-      const messageLines = doc.splitTextToSize(
-        form.message.trim(),
-        pageWidth - margin * 2,
-      );
-
-      doc.text(messageLines, margin, y);
-    }
-
-    const whatsappText =
-      `Hello ${BUSINESS_NAME}, I would like to submit my crackers inquiry.\n\n` +
-      `Invoice: ${invoiceId}\n` +
-      `Name: ${form.name.trim()}\n` +
-      `Mobile: ${mobile}\n` +
-      `Area: ${form.area.trim()}\n\n` +
-      `Name        Qty        Price\n` +
-      cart
-        .map(
-          (item) =>
-            `${item.product.name}        ${item.quantity}        ${money(
-              item.product.salePrice * item.quantity,
-            )}`,
-        )
-        .join('\n') +
-      `\n\nMarket Price Total: ${money(totals.market)}` +
-      `\nYou Save: ${money(totals.savings)}` +
-      `\nTOTAL: ${money(totals.sale)}` +
-      (form.message.trim()
-        ? `\n\nAdditional Message: ${form.message.trim()}`
-        : '');
-
-    const pdfBlob = doc.output('blob');
-    const pdfFile = new File([pdfBlob], `${invoiceId}.pdf`, {
-      type: 'application/pdf',
-    });
-
-    try {
-      if (
-        navigator.share &&
-        navigator.canShare?.({ files: [pdfFile] })
-      ) {
-        await navigator.share({
-          files: [pdfFile],
-          title: `${BUSINESS_NAME} invoice`,
-          text: whatsappText,
+        doc.text(label, right - 65, y);
+        doc.text(money(amount), right, y, {
+          align: 'right',
         });
 
-        onClose();
-        return;
+        y += bold ? 8 : 6;
+      };
+
+      addTotal('Market Price Total', totals.market);
+      addTotal('You Save', totals.savings);
+      addTotal('Sale Price Total', totals.sale, true);
+
+      // Optional message
+      if (message) {
+        y += 5;
+
+        if (y + 20 > pageHeight - 12) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('Additional Message', margin, y);
+
+        y += 6;
+
+        doc.setFont('helvetica', 'normal');
+
+        const messageLines = doc.splitTextToSize(
+          message,
+          pageWidth - margin * 2,
+        );
+
+        doc.text(messageLines, margin, y);
       }
-    } catch (shareError) {
-      if (
-        shareError instanceof Error &&
-        shareError.name === 'AbortError'
-      ) {
-        return;
-      }
+
+      // WhatsApp message
+      const productLines = cart
+        .map(
+          ({ product, quantity }) =>
+            `${product.name}    ${quantity}    ${money(
+              product.salePrice * quantity,
+            )}`,
+        )
+        .join('\n');
+
+      const whatsappText =
+        `Hello ${BUSINESS_NAME}, I would like to submit my crackers inquiry.\n\n` +
+        `Invoice: ${invoiceId}\n` +
+        `Name: ${name}\n` +
+        `Mobile: ${mobile}\n` +
+        `Area: ${area}\n\n` +
+        `Name        Qty        Price\n` +
+        `${productLines}\n\n` +
+        `Market Price Total: ${money(totals.market)}\n` +
+        `You Save: ${money(totals.savings)}\n` +
+        `TOTAL: ${money(totals.sale)}` +
+        (message ? `\n\nAdditional Message: ${message}` : '') +
+        `\n\nPlease find the invoice PDF attached separately.`;
+
+      const whatsappUrl =
+        `https://wa.me/${ownerNumber}?text=${encodeURIComponent(whatsappText)}`;
+
+      // Open WhatsApp directly; download invoice separately.
+      doc.save(`${invoiceId}.pdf`);
+
+      window.location.href = whatsappUrl;
+    } catch (submitError) {
+      console.error('Inquiry submission failed:', submitError);
+      setError(
+        'Could not prepare your inquiry. Please try again.',
+      );
+      setSubmitting(false);
     }
-
-    // Fallback for browsers that cannot share PDF files directly
-    doc.save(`${invoiceId}.pdf`);
-
-    window.open(
-      `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
-        `${whatsappText}\n\nPlease find my invoice PDF attached.`,
-      )}`,
-      '_blank',
-      'noopener,noreferrer',
-    );
-
-    setError(
-      'Invoice PDF downloaded. Attach the downloaded PDF in WhatsApp before sending your inquiry.',
-    );
   };
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="customer-form-title"
+    >
       <form className="details-form" onSubmit={submit}>
         <button
           type="button"
@@ -1037,16 +1062,19 @@ function CustomerForm({
         </button>
 
         <span className="kicker">Almost there</span>
-        <h2>Customer details.</h2>
+
+        <h2 id="customer-form-title">Customer details.</h2>
+
         <p>
-          Enter your details to prepare your invoice and open the
-          WhatsApp inquiry.
+          Enter your details to prepare your invoice and open
+          the WhatsApp inquiry.
         </p>
 
         <label>
           Name
           <input
             type="text"
+            autoComplete="name"
             value={form.name}
             onChange={(event) =>
               setForm({ ...form, name: event.target.value })
@@ -1061,6 +1089,7 @@ function CustomerForm({
           <input
             type="tel"
             inputMode="numeric"
+            autoComplete="tel"
             value={form.mobile}
             onChange={(event) =>
               setForm({ ...form, mobile: event.target.value })
@@ -1074,6 +1103,7 @@ function CustomerForm({
           Area / location
           <input
             type="text"
+            autoComplete="address-level2"
             value={form.area}
             onChange={(event) =>
               setForm({ ...form, area: event.target.value })
@@ -1097,8 +1127,12 @@ function CustomerForm({
 
         {error && <p className="form-error">{error}</p>}
 
-        <button type="submit" className="button button-primary submit-button">
-          Submit inquiry on WhatsApp
+        <button
+          type="submit"
+          className="button button-primary submit-button"
+          disabled={submitting}
+        >
+          {submitting ? 'Preparing inquiry...' : 'Submit inquiry on WhatsApp'}
           <ArrowRight size={18} />
         </button>
       </form>
@@ -1108,50 +1142,52 @@ function CustomerForm({
 
 function AboutPage() {
   return (
-    <section className="page-section">
+    <section className="section page-section">
       <div className="section-heading">
         <span className="kicker">About us</span>
         <h1>Making every celebration brighter.</h1>
+
         <p>
-          At {BUSINESS_NAME}, we help families celebrate their special
-          moments with a selection of crackers at clear, affordable prices.
+          At {BUSINESS_NAME}, we help families celebrate their
+          special moments with a selection of crackers at clear,
+          affordable prices.
         </p>
       </div>
 
       <div className="about-grid">
-        <div className="about-card">
+        <article className="about-card">
           <Sparkles size={28} />
           <h3>Celebration for everyone</h3>
           <p>
-            Explore products for festivals, family gatherings and special
-            occasions.
+            Explore products for festivals, family gatherings and
+            special occasions.
           </p>
-        </div>
+        </article>
 
-        <div className="about-card">
+        <article className="about-card">
           <Tag size={28} />
           <h3>Clear pricing</h3>
           <p>
-            Compare market prices and sale prices before adding products
-            to your inquiry.
+            Compare market prices and sale prices before adding
+            products to your inquiry.
           </p>
-        </div>
+        </article>
 
-        <div className="about-card">
+        <article className="about-card">
           <MessageCircle size={28} />
           <h3>Easy inquiries</h3>
           <p>
-            Select your products and send your inquiry to us through
+            Select your products and send your inquiry through
             WhatsApp.
           </p>
-        </div>
+        </article>
       </div>
 
       <div className="about-note">
         <h2>Celebrate responsibly.</h2>
         <p>
-          Always follow local rules, read safety instructions and use
-          fireworks responsibly. Keep children supervised and maintain
+          Follow local rules, read safety instructions and use
+          fireworks responsibly. Supervise children and maintain
           a safe distance.
         </p>
       </div>
@@ -1171,23 +1207,27 @@ function ContactRow({
   return (
     <div className="contact-row">
       <div className="contact-icon">{icon}</div>
-      <div>
+
+      <div className="contact-row-content">
         <h3>{title}</h3>
-        <div>{children}</div>
+        {children}
       </div>
     </div>
   );
 }
 
 function ContactPage() {
+  const whatsappNumber = OWNER_WHATSAPP.replace(/\D/g, '');
+
   return (
-    <section className="page-section">
+    <section className="section page-section">
       <div className="section-heading">
         <span className="kicker">Contact us</span>
         <h1>We’re happy to help.</h1>
+
         <p>
-          Have a question about products or pricing? Contact us using
-          the details below.
+          Have a question about products or pricing? Contact us
+          using the details below.
         </p>
       </div>
 
@@ -1209,7 +1249,7 @@ function ContactPage() {
         </ContactRow>
 
         <ContactRow
-          icon={<Clock size={22} />}
+          icon={<Clock3 size={22} />}
           title="Business hours"
         >
           <p>{BUSINESS_HOURS}</p>
@@ -1220,7 +1260,7 @@ function ContactPage() {
           title="WhatsApp"
         >
           <a
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
+            href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -1231,10 +1271,14 @@ function ContactPage() {
 
       <div className="contact-cta">
         <h2>Ready to make an inquiry?</h2>
-        <p>Select your products and send us your list through WhatsApp.</p>
+
+        <p>
+          Select your products and send us your list through WhatsApp.
+        </p>
+
         <a
-          className="button button-primary"
-          href={`https://wa.me/${OWNER_WHATSAPP}`}
+          className="button primary"
+          href={`https://wa.me/${whatsappNumber}`}
           target="_blank"
           rel="noopener noreferrer"
         >
