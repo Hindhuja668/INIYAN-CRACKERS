@@ -1,4 +1,6 @@
+
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { jsPDF } from 'jspdf';
 import {
   ArrowRight,
@@ -90,11 +92,9 @@ const getTotals = (cart: CartItem[]): Totals =>
         market:
           total.market +
           product.marketPrice * item.quantity,
-
         sale:
           total.sale +
           product.salePrice * item.quantity,
-
         savings:
           total.savings +
           (product.marketPrice - product.salePrice) *
@@ -115,7 +115,6 @@ function App() {
 
   useEffect(() => {
     const onHash = () => setPage(getPage());
-
     window.addEventListener('hashchange', onHash);
 
     return () => {
@@ -124,10 +123,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(cart)
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
   }, [cart]);
 
   const itemCount = cart.reduce(
@@ -137,58 +133,31 @@ function App() {
 
   const navigate = (next: Page) => {
     window.location.hash = `/${next}`;
+    setPage(next);
     setMenuOpen(false);
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const addToCart = (
-    productId: number,
-    quantity: number
-  ) => {
+  const addToCart = (productId: number, quantity: number) => {
     setCart((current) =>
-      current.some(
-        (item) => item.productId === productId
-      )
+      current.some((item) => item.productId === productId)
         ? current.map((item) =>
             item.productId === productId
-              ? {
-                  ...item,
-                  quantity:
-                    item.quantity + quantity,
-                }
+              ? { ...item, quantity: item.quantity + quantity }
               : item
           )
-        : [
-            ...current,
-            {
-              productId,
-              quantity,
-            },
-          ]
+        : [...current, { productId, quantity }]
     );
   };
 
-  const updateQuantity = (
-    productId: number,
-    change: number
-  ) => {
+  const updateQuantity = (productId: number, change: number) => {
     setCart((current) =>
       current.flatMap((item) =>
         item.productId === productId &&
         item.quantity + change <= 0
           ? []
           : item.productId === productId
-          ? [
-              {
-                ...item,
-                quantity:
-                  item.quantity + change,
-              },
-            ]
+          ? [{ ...item, quantity: item.quantity + change }]
           : [item]
       )
     );
@@ -196,9 +165,7 @@ function App() {
 
   const removeItem = (productId: number) => {
     setCart((current) =>
-      current.filter(
-        (item) => item.productId !== productId
-      )
+      current.filter((item) => item.productId !== productId)
     );
   };
 
@@ -213,50 +180,29 @@ function App() {
             <span className="brand-mark">
               <Sparkles size={18} />
             </span>
-
             <span>
               {BUSINESS_NAME}
-              <small>
-                Quality fireworks & crackers
-              </small>
+              <small>Quality fireworks & crackers</small>
             </span>
           </button>
 
-          <nav
-            className={
-              menuOpen
-                ? 'main-nav open'
-                : 'main-nav'
-            }
-          >
-            {(
-              [
-                'home',
-                'products',
-                'about',
-                'contact',
-              ] as Page[]
-            ).map((item) => (
-              <button
-                key={item}
-                className={
-                  page === item ? 'active' : ''
-                }
-                onClick={() =>
-                  navigate(item)
-                }
-              >
-                {item[0].toUpperCase() +
-                  item.slice(1)}
-              </button>
-            ))}
+          <nav className={menuOpen ? 'main-nav open' : 'main-nav'}>
+            {(['home', 'products', 'about', 'contact'] as Page[]).map(
+              (item) => (
+                <button
+                  key={item}
+                  className={page === item ? 'active' : ''}
+                  onClick={() => navigate(item)}
+                >
+                  {item[0].toUpperCase() + item.slice(1)}
+                </button>
+              )
+            )}
           </nav>
 
           <button
             className="nav-inquiry"
-            onClick={() =>
-              navigate('inquiry')
-            }
+            onClick={() => navigate('inquiry')}
           >
             <List size={16} />
             Inquiry
@@ -265,9 +211,7 @@ function App() {
 
           <button
             className="menu-toggle"
-            onClick={() =>
-              setMenuOpen(!menuOpen)
-            }
+            onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
             {menuOpen ? <X /> : <Menu />}
@@ -277,16 +221,11 @@ function App() {
 
       <main>
         {page === 'home' && (
-          <Home
-            navigate={navigate}
-            addToCart={addToCart}
-          />
+          <Home navigate={navigate} addToCart={addToCart} />
         )}
 
         {page === 'products' && (
-          <ProductsPage
-            addToCart={addToCart}
-          />
+          <ProductsPage addToCart={addToCart} />
         )}
 
         {page === 'inquiry' && (
@@ -299,10 +238,7 @@ function App() {
           />
         )}
 
-        {page === 'about' && (
-          <About navigate={navigate} />
-        )}
-
+        {page === 'about' && <About navigate={navigate} />}
         {page === 'contact' && <Contact />}
       </main>
 
@@ -312,38 +248,23 @@ function App() {
             <span className="brand-mark">
               <Sparkles size={18} />
             </span>
-
             <span>
               {BUSINESS_NAME}
-              <small>
-                Made for brighter celebrations
-              </small>
+              <small>Made for brighter celebrations</small>
             </span>
           </div>
-
           <p>
-            Trusted crackers and fireworks for
-            every celebration.
+            Trusted crackers and fireworks for every celebration.
           </p>
         </div>
 
         <div className="footer-links">
-          <button
-            onClick={() =>
-              navigate('products')
-            }
-          >
+          <button onClick={() => navigate('products')}>
             Browse products
           </button>
-
-          <button
-            onClick={() =>
-              navigate('about')
-            }
-          >
+          <button onClick={() => navigate('about')}>
             About us
           </button>
-
           <a
             href={`https://wa.me/${OWNER_WHATSAPP}`}
             target="_blank"
@@ -354,8 +275,7 @@ function App() {
         </div>
 
         <p className="copyright">
-          © 2026 {BUSINESS_NAME}. Prices shown
-          are from our current list.
+          © 2026 {BUSINESS_NAME}. Prices shown are from our current list.
         </p>
       </footer>
 
@@ -377,10 +297,7 @@ function Home({
   addToCart,
 }: {
   navigate: (page: Page) => void;
-  addToCart: (
-    id: number,
-    quantity: number
-  ) => void;
+  addToCart: (id: number, quantity: number) => void;
 }) {
   const featured = products.slice(27, 33);
 
@@ -400,27 +317,21 @@ function Home({
           </h1>
 
           <p>
-            Bring home the magic of the festival
-            with quality crackers at honest,
-            factory-direct prices.
+            Bring home the magic of the festival with quality crackers
+            at honest, factory-direct prices.
           </p>
 
           <div className="hero-actions">
             <button
               className="button primary"
-              onClick={() =>
-                navigate('products')
-              }
+              onClick={() => navigate('products')}
             >
               View products
               <ArrowRight size={17} />
             </button>
-
             <button
               className="button ghost-light"
-              onClick={() =>
-                navigate('inquiry')
-              }
+              onClick={() => navigate('inquiry')}
             >
               Make an inquiry
             </button>
@@ -428,32 +339,20 @@ function Home({
 
           <div className="hero-note">
             <ShieldCheck size={17} />
-            Quality checked · Packed with care ·
-            Easy WhatsApp ordering
+            Quality checked · Packed with care · Easy WhatsApp ordering
           </div>
         </div>
 
         <div className="hero-art">
-          <div className="burst burst-one">
-            ✦
-          </div>
-
-          <div className="burst burst-two">
-            ✦
-          </div>
-
-          <div className="burst burst-three">
-            ✦
-          </div>
-
+          <div className="burst burst-one">✦</div>
+          <div className="burst burst-two">✦</div>
+          <div className="burst burst-three">✦</div>
           <div className="rocket rocket-one">
             <Zap size={38} />
           </div>
-
           <div className="rocket rocket-two">
             <Flame size={30} />
           </div>
-
           <div className="hero-card">
             <span>UP TO</span>
             <strong>80%</strong>
@@ -465,34 +364,23 @@ function Home({
       <section className="trust-strip">
         <div>
           <ShieldCheck />
-
           <span>
             <b>Genuine quality</b>
-            <small>
-              Carefully selected products
-            </small>
+            <small>Carefully selected products</small>
           </span>
         </div>
-
         <div>
           <Package />
-
           <span>
             <b>Factory pricing</b>
-            <small>
-              More value in every box
-            </small>
+            <small>More value in every box</small>
           </span>
         </div>
-
         <div>
           <HeartHandshake />
-
           <span>
             <b>Personal service</b>
-            <small>
-              We help you choose
-            </small>
+            <small>We help you choose</small>
           </span>
         </div>
       </section>
@@ -500,20 +388,12 @@ function Home({
       <section className="section">
         <div className="section-heading">
           <div>
-            <span className="kicker">
-              Popular picks
-            </span>
-
-            <h2>
-              Made for memorable nights.
-            </h2>
+            <span className="kicker">Popular picks</span>
+            <h2>Made for memorable nights.</h2>
           </div>
-
           <button
             className="text-button"
-            onClick={() =>
-              navigate('products')
-            }
+            onClick={() => navigate('products')}
           >
             See all products
             <ArrowRight size={16} />
@@ -533,21 +413,15 @@ function Home({
 
       <section className="category-banner">
         <div>
-          <span className="kicker">
-            One list. Every celebration.
-          </span>
-
+          <span className="kicker">One list. Every celebration.</span>
           <h2>
             From a little sparkle
             <br />
             to a sky full of colour.
           </h2>
-
           <button
             className="button primary"
-            onClick={() =>
-              navigate('products')
-            }
+            onClick={() => navigate('products')}
           >
             Explore the collection
             <ArrowRight size={17} />
@@ -563,14 +437,12 @@ function Home({
       </section>
     </>
   );
-        }
+}
+
 function ProductsPage({
   addToCart,
 }: {
-  addToCart: (
-    id: number,
-    quantity: number
-  ) => void;
+  addToCart: (id: number, quantity: number) => void;
 }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
@@ -586,8 +458,7 @@ function ProductsPage({
     () =>
       products.filter(
         (product) =>
-          (category === 'All' ||
-            product.category === category) &&
+          (category === 'All' || product.category === category) &&
           product.name.toLowerCase().includes(search.toLowerCase())
       ),
     [category, search]
@@ -652,13 +523,9 @@ function ProductCard({
   addToCart,
 }: {
   product: Product;
-  addToCart: (
-    id: number,
-    quantity: number
-  ) => void;
+  addToCart: (id: number, quantity: number) => void;
 }) {
   const [quantity, setQuantity] = useState(1);
-
   const savings = product.marketPrice - product.salePrice;
 
   return (
@@ -737,9 +604,7 @@ function InquiryPage({
         <div>
           <span className="kicker">Your selection</span>
           <h1>Inquiry list.</h1>
-          <p>
-            Review your products before sending your request.
-          </p>
+          <p>Review your products before sending your request.</p>
         </div>
 
         <div className="inquiry-count">
@@ -789,6 +654,7 @@ function InquiryPage({
                   <div className="quantity">
                     <button
                       onClick={() => updateQuantity(product.id, -1)}
+                      aria-label={`Decrease ${product.name} quantity`}
                     >
                       <Minus size={14} />
                     </button>
@@ -797,6 +663,7 @@ function InquiryPage({
 
                     <button
                       onClick={() => updateQuantity(product.id, 1)}
+                      aria-label={`Increase ${product.name} quantity`}
                     >
                       <Plus size={14} />
                     </button>
@@ -888,7 +755,8 @@ function Summary({
       </p>
     </aside>
   );
-              }
+}
+
 function CustomerForm({
   cart,
   totals,
@@ -907,24 +775,19 @@ function CustomerForm({
 
   const [error, setError] = useState('');
 
-  const submit = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError('');
 
     const mobile = form.mobile.replace(/\D/g, '');
 
-    if (
-      !form.name.trim() ||
-      !mobile ||
-      !form.area.trim()
-    ) {
-      setError('Please complete all required fields.');
+    if (!form.name.trim() || !mobile || !form.area.trim()) {
+      setError('Please fill in your name, mobile number and area.');
       return;
     }
 
     if (!/^[6-9]\d{9}$/.test(mobile)) {
-      setError('Enter a valid 10-digit Indian mobile number.');
+      setError('Please enter a valid 10-digit Indian mobile number.');
       return;
     }
 
@@ -937,248 +800,191 @@ function CustomerForm({
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
     const right = pageWidth - margin;
 
-    // Invoice heading and seller details
+    const drawTableHeader = (y: number) => {
+      doc.setFillColor(255, 237, 213);
+      doc.rect(margin, y, pageWidth - margin * 2, 9, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(80, 50, 30);
+
+      doc.text('Product', margin + 2, y + 6);
+      doc.text('Qty', right - 57, y + 6, { align: 'right' });
+      doc.text('Market', right - 36, y + 6, { align: 'right' });
+      doc.text('Sale', right - 19, y + 6, { align: 'right' });
+      doc.text('Total', right - 2, y + 6, { align: 'right' });
+    };
+
+    // Invoice heading
     doc.setFillColor(255, 247, 237);
-    doc.rect(0, 0, pageWidth, 48, 'F');
+    doc.rect(0, 0, pageWidth, 47, 'F');
 
-    doc.setTextColor(145, 55, 20);
+    doc.setTextColor(124, 45, 18);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(21);
-    doc.text(BUSINESS_NAME.toUpperCase(), margin, 17);
+    doc.setFontSize(22);
+    doc.text(BUSINESS_NAME, margin, 17);
 
-    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(65, 65, 65);
-    doc.text(BUSINESS_AREA || 'Crackers & Fireworks', margin, 24);
-    doc.text(`Cell: ${BUSINESS_PHONE}`, margin, 30);
+    doc.setFontSize(10);
+    doc.text(BUSINESS_AREA, margin, 25);
+    doc.text(`Phone: ${BUSINESS_PHONE}`, margin, 32);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('INVOICE', right, 17, { align: 'right' });
+    doc.setFontSize(14);
+    doc.text('INQUIRY INVOICE', right, 17, { align: 'right' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`Invoice ID: ${invoiceId}`, right, 25, {
-      align: 'right',
-    });
-    doc.text(`Date: ${invoiceDate}`, right, 31, {
-      align: 'right',
-    });
+    doc.text(`Invoice: ${invoiceId}`, right, 25, { align: 'right' });
+    doc.text(`Date: ${invoiceDate}`, right, 32, { align: 'right' });
 
     // Customer details
-    doc.setTextColor(30, 30, 30);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('Customer Details', margin, 59);
+    let y = 58;
 
+    doc.setTextColor(40, 40, 40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Customer Details', margin, y);
+
+    y += 8;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Name: ${form.name.trim()}`, margin, 66);
-    doc.text(`Mobile: ${mobile}`, margin, 72);
-    doc.text(`Area: ${form.area.trim()}`, margin, 78);
+    doc.text(`Name: ${form.name.trim()}`, margin, y);
+
+    y += 6;
+    doc.text(`Mobile: ${mobile}`, margin, y);
+
+    y += 6;
+    doc.text(`Area: ${form.area.trim()}`, margin, y);
+
+    y += 12;
 
     // Product table
-    let y = 91;
+    drawTableHeader(y);
+    y += 14;
 
-    const columns = {
-      sno: margin + 1,
-      code: margin + 13,
-      name: margin + 31,
-      qty: right - 48,
-      rate: right - 29,
-      amount: right,
-    };
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(45, 45, 45);
 
-    const drawTableHeader = () => {
-      doc.setFillColor(145, 55, 20);
-      doc.rect(
-        margin,
-        y - 6,
-        pageWidth - margin * 2,
-        10,
-        'F'
-      );
+    cart.forEach((item) => {
+      const productName = item.product.name;
+      const nameLines = doc.splitTextToSize(productName, 70);
+      const rowHeight = Math.max(8, nameLines.length * 4.5 + 2);
 
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-
-      doc.text('S.NO', columns.sno, y);
-      doc.text('CODE', columns.code, y);
-      doc.text('PRODUCT NAME', columns.name, y);
-      doc.text('QTY', columns.qty, y, { align: 'right' });
-      doc.text('RATE (Rs.)', columns.rate, y, {
-        align: 'right',
-      });
-      doc.text('AMOUNT (Rs.)', columns.amount, y, {
-        align: 'right',
-      });
-
-      y += 10;
-      doc.setTextColor(35, 35, 35);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-    };
-
-    drawTableHeader();
-
-    cart.forEach((item, index) => {
-      const product = products.find(
-        (entry) => entry.id === item.productId
-      );
-
-      if (!product) return;
-
-      if (y > 265) {
+      if (y + rowHeight > pageHeight - 45) {
         doc.addPage();
-        y = 20;
-        drawTableHeader();
+        y = 18;
+        drawTableHeader(y);
+        y += 14;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
       }
 
-      const nameLines = doc.splitTextToSize(
-        product.name,
-        67
-      ) as string[];
+      doc.text(nameLines, margin + 2, y);
 
-      const rowHeight = Math.max(
-        8,
-        nameLines.length * 4 + 3
-      );
+      doc.text(String(item.quantity), right - 57, y, {
+        align: 'right',
+      });
 
-      if (index % 2 === 1) {
-        doc.setFillColor(250, 250, 250);
-        doc.rect(
-          margin,
-          y - 5,
-          pageWidth - margin * 2,
-          rowHeight,
-          'F'
-        );
-      }
+      doc.text(money(item.product.marketPrice), right - 36, y, {
+        align: 'right',
+      });
 
-      doc.text(String(index + 1), columns.sno, y);
-      doc.text(String(product.id), columns.code, y);
-      doc.text(nameLines, columns.name, y);
-
-      doc.text(String(item.quantity), columns.qty, y, {
+      doc.text(money(item.product.salePrice), right - 19, y, {
         align: 'right',
       });
 
       doc.text(
-        product.salePrice.toLocaleString('en-IN'),
-        columns.rate,
+        money(item.product.salePrice * item.quantity),
+        right - 2,
         y,
-        { align: 'right' }
-      );
-
-      doc.text(
-        (product.salePrice * item.quantity).toLocaleString('en-IN'),
-        columns.amount,
-        y,
-        { align: 'right' }
+        { align: 'right' },
       );
 
       y += rowHeight;
+
+      doc.setDrawColor(235, 235, 235);
+      doc.line(margin, y - 2, right, y - 2);
     });
+
+    // Start totals on a new page if there is not enough room
+    if (y + 45 > pageHeight - 15) {
+      doc.addPage();
+      y = 20;
+    }
 
     y += 5;
 
-    if (y > 260) {
-      doc.addPage();
-      y = 25;
-    }
+    const totalLine = (label: string, amount: number, bold = false) => {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setFontSize(bold ? 11 : 10);
+      doc.setTextColor(55, 55, 55);
+      doc.text(label, right - 65, y);
+      doc.text(money(amount), right, y, { align: 'right' });
+      y += bold ? 8 : 6;
+    };
 
-    doc.setDrawColor(210, 210, 210);
-    doc.line(margin, y, right, y);
+    totalLine('Market Price Total', totals.market);
+    totalLine('You Save', totals.savings);
+    totalLine('Sale Price Total', totals.sale, true);
 
-    y += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-
-    doc.text('Market Price Total', right - 55, y);
-    doc.text(
-      totals.market.toLocaleString('en-IN'),
-      right,
-      y,
-      { align: 'right' }
-    );
-
-    y += 7;
-    doc.text('Discount / Savings', right - 55, y);
-    doc.text(
-      totals.savings.toLocaleString('en-IN'),
-      right,
-      y,
-      { align: 'right' }
-    );
-
-    y += 8;
-    doc.setFillColor(255, 247, 237);
-    doc.rect(right - 75, y - 5, 75, 13, 'F');
-
-    doc.setTextColor(145, 55, 20);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-
-    doc.text('TOTAL (Rs.)', right - 70, y + 3);
-    doc.text(
-      totals.sale.toLocaleString('en-IN'),
-      right - 3,
-      y + 3,
-      { align: 'right' }
-    );
-
+    // Optional customer message
     if (form.message.trim()) {
-      y += 20;
+      y += 5;
 
-      doc.setTextColor(35, 35, 35);
+      if (y + 20 > pageHeight - 15) {
+        doc.addPage();
+        y = 20;
+      }
+
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text('Additional Message:', margin, y);
+      doc.setFontSize(10);
+      doc.text('Additional Message', margin, y);
 
+      y += 6;
       doc.setFont('helvetica', 'normal');
-      doc.text(
-        doc.splitTextToSize(
-          form.message.trim(),
-          pageWidth - margin * 2
-        ),
-        margin,
-        y + 6
+
+      const messageLines = doc.splitTextToSize(
+        form.message.trim(),
+        pageWidth - margin * 2,
       );
+
+      doc.text(messageLines, margin, y);
     }
-
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text(
-      'Thank you for choosing Iniyan Crackers!',
-      pageWidth / 2,
-      286,
-      { align: 'center' }
-    );
-
-    const pdfBlob = doc.output('blob');
-    const pdfFile = new File(
-      [pdfBlob],
-      `${invoiceId}.pdf`,
-      { type: 'application/pdf' }
-    );
 
     const whatsappText =
-      `Hello ${BUSINESS_NAME}, I would like to submit my crackers inquiry.\n` +
+      `Hello ${BUSINESS_NAME}, I would like to submit my crackers inquiry.\n\n` +
       `Invoice: ${invoiceId}\n` +
       `Name: ${form.name.trim()}\n` +
       `Mobile: ${mobile}\n` +
-      `Area: ${form.area.trim()}\n` +
-      `Total: ${money(totals.sale)}` +
+      `Area: ${form.area.trim()}\n\n` +
+      `Name        Qty        Price\n` +
+      cart
+        .map(
+          (item) =>
+            `${item.product.name}        ${item.quantity}        ${money(
+              item.product.salePrice * item.quantity,
+            )}`,
+        )
+        .join('\n') +
+      `\n\nMarket Price Total: ${money(totals.market)}` +
+      `\nYou Save: ${money(totals.savings)}` +
+      `\nTOTAL: ${money(totals.sale)}` +
       (form.message.trim()
-        ? `\nMessage: ${form.message.trim()}`
+        ? `\n\nAdditional Message: ${form.message.trim()}`
         : '');
 
-    // Share the actual PDF when supported by the browser.
+    const pdfBlob = doc.output('blob');
+    const pdfFile = new File([pdfBlob], `${invoiceId}.pdf`, {
+      type: 'application/pdf',
+    });
+
     try {
       if (
         navigator.share &&
@@ -1202,276 +1008,152 @@ function CustomerForm({
       }
     }
 
-    // Fallback: download the PDF and open the owner's WhatsApp chat.
+    // Fallback for browsers that cannot share PDF files directly
     doc.save(`${invoiceId}.pdf`);
 
     window.open(
       `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
-        `${whatsappText}\n\nPlease find my invoice PDF attached.`
+        `${whatsappText}\n\nPlease find my invoice PDF attached.`,
       )}`,
       '_blank',
-      'noopener,noreferrer'
+      'noopener,noreferrer',
     );
 
     setError(
-      'Invoice PDF downloaded. In WhatsApp, attach the downloaded PDF before sending your inquiry.'
+      'Invoice PDF downloaded. Attach the downloaded PDF in WhatsApp before sending your inquiry.',
     );
   };
 
   return (
-    <div
-      className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-    >
-      <form
-        className="details-form"
-        onSubmit={submit}
-      >
+    <div className="modal-backdrop" role="dialog" aria-modal="true">
+      <form className="details-form" onSubmit={submit}>
         <button
           type="button"
           className="close-button"
           onClick={onClose}
+          aria-label="Close form"
         >
           <X size={20} />
         </button>
 
         <span className="kicker">Almost there</span>
         <h2>Customer details.</h2>
-
         <p>
-          We’ll open WhatsApp only after you submit these details.
+          Enter your details to prepare your invoice and open the
+          WhatsApp inquiry.
         </p>
 
         <label>
-          Name *
+          Name
           <input
-            required
+            type="text"
             value={form.name}
             onChange={(event) =>
-              setForm({
-                ...form,
-                name: event.target.value,
-              })
+              setForm({ ...form, name: event.target.value })
             }
             placeholder="Your full name"
+            required
           />
         </label>
 
         <label>
-          Mobile number *
+          Mobile number
           <input
-            required
+            type="tel"
             inputMode="numeric"
             value={form.mobile}
             onChange={(event) =>
-              setForm({
-                ...form,
-                mobile: event.target.value,
-              })
+              setForm({ ...form, mobile: event.target.value })
             }
             placeholder="10-digit mobile number"
+            required
           />
         </label>
 
         <label>
-          Area / location *
+          Area / location
           <input
-            required
+            type="text"
             value={form.area}
             onChange={(event) =>
-              setForm({
-                ...form,
-                area: event.target.value,
-              })
+              setForm({ ...form, area: event.target.value })
             }
-            placeholder="Where should we reach you?"
+            placeholder="Your area or town"
+            required
           />
         </label>
 
         <label>
-          Additional message
+          Additional message (optional)
           <textarea
             value={form.message}
             onChange={(event) =>
-              setForm({
-                ...form,
-                message: event.target.value,
-              })
+              setForm({ ...form, message: event.target.value })
             }
-            placeholder="Any preferences or questions?"
+            placeholder="Any additional information?"
             rows={3}
           />
         </label>
 
-        {error && (
-          <p className="form-error">{error}</p>
-        )}
+        {error && <p className="form-error">{error}</p>}
 
-        <button
-          className="button primary full"
-          type="submit"
-        >
-          <MessageCircle size={18} />
+        <button type="submit" className="button button-primary submit-button">
           Submit inquiry on WhatsApp
+          <ArrowRight size={18} />
         </button>
       </form>
     </div>
   );
 }
-function About({
-  navigate,
-}: {
-  navigate: (page: Page) => void;
-}) {
+
+function AboutPage() {
   return (
-    <section className="section page-section about-page">
-      <div className="about-hero">
-        <div>
-          <span className="kicker">Our story</span>
+    <section className="page-section">
+      <div className="section-heading">
+        <span className="kicker">About us</span>
+        <h1>Making every celebration brighter.</h1>
+        <p>
+          At {BUSINESS_NAME}, we help families celebrate their special
+          moments with a selection of crackers at clear, affordable prices.
+        </p>
+      </div>
 
-          <h1>
-            Bringing joy to your celebrations.
-          </h1>
-
+      <div className="about-grid">
+        <div className="about-card">
+          <Sparkles size={28} />
+          <h3>Celebration for everyone</h3>
           <p>
-            Iniyan Crackers brings you a wide
-            range of quality fireworks at factory
-            prices, so every family can celebrate
-            with confidence.
+            Explore products for festivals, family gatherings and special
+            occasions.
           </p>
         </div>
 
-        <div className="about-seal">
-          <Sparkles size={30} />
-        </div>
-      </div>
-
-      <div className="values-grid">
-        <Value
-          icon={<ShieldCheck />}
-          title="Quality first"
-          text="Every product is selected with care for a bright, dependable celebration."
-        />
-
-        <Value
-          icon={<HeartHandshake />}
-          title="Helpful service"
-          text="Tell us what you need and we’ll help you build the right inquiry."
-        />
-
-        <Value
-          icon={<Package />}
-          title="More variety"
-          text="From sparklers and flower pots to rockets and repeating cakes."
-        />
-      </div>
-
-      <div className="about-callout">
-        <div>
-          <span className="kicker">Ready to celebrate?</span>
-
-          <h2>
-            Make your list.
-            <br />
-            We’ll take it from there.
-          </h2>
-        </div>
-
-        <button
-          className="button primary"
-          onClick={() => navigate('products')}
-        >
-          Browse products
-          <ArrowRight size={17} />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function Value({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="value-card">
-      <div className="value-icon">{icon}</div>
-      <h3>{title}</h3>
-      <p>{text}</p>
-    </div>
-  );
-}
-
-function Contact() {
-  return (
-    <section className="section page-section contact-page">
-      <div className="page-title">
-        <div>
-          <span className="kicker">We’re here to help</span>
-          <h1>Contact us.</h1>
-
+        <div className="about-card">
+          <Tag size={28} />
+          <h3>Clear pricing</h3>
           <p>
-            Have a question about a product or your inquiry? Reach out.
+            Compare market prices and sale prices before adding products
+            to your inquiry.
+          </p>
+        </div>
+
+        <div className="about-card">
+          <MessageCircle size={28} />
+          <h3>Easy inquiries</h3>
+          <p>
+            Select your products and send your inquiry to us through
+            WhatsApp.
           </p>
         </div>
       </div>
 
-      <div className="contact-grid">
-        <div className="contact-card">
-          <ContactRow
-            icon={<Phone />}
-            title="Call us"
-            value={BUSINESS_PHONE}
-            href={`tel:${BUSINESS_PHONE.replace(/\s/g, '')}`}
-          />
-
-          <ContactRow
-            icon={<MessageCircle />}
-            title="WhatsApp"
-            value="Chat with our team"
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
-          />
-
-          <ContactRow
-            icon={<MapPin />}
-            title="Our area"
-            value={BUSINESS_AREA}
-          />
-
-          <ContactRow
-            icon={<Clock3 />}
-            title="Business hours"
-            value={BUSINESS_HOURS}
-          />
-        </div>
-
-        <div className="contact-panel">
-          <Sparkles size={32} />
-
-          <h2>
-            Let’s make your celebration brighter.
-          </h2>
-
-          <p>
-            Send us your product list through WhatsApp and we’ll get back to you with the details.
-          </p>
-
-          <a
-            className="button primary"
-            href={`https://wa.me/${OWNER_WHATSAPP}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <MessageCircle size={17} />
-            Chat on WhatsApp
-          </a>
-        </div>
+      <div className="about-note">
+        <h2>Celebrate responsibly.</h2>
+        <p>
+          Always follow local rules, read safety instructions and use
+          fireworks responsibly. Keep children supervised and maintain
+          a safe distance.
+        </p>
       </div>
     </section>
   );
@@ -1480,36 +1162,87 @@ function Contact() {
 function ContactRow({
   icon,
   title,
-  value,
-  href,
+  children,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
-  value: string;
-  href?: string;
+  children: ReactNode;
 }) {
-  const content = (
-    <>
+  return (
+    <div className="contact-row">
       <div className="contact-icon">{icon}</div>
-
       <div>
-        <span>{title}</span>
-        <strong>{value}</strong>
+        <h3>{title}</h3>
+        <div>{children}</div>
       </div>
-    </>
+    </div>
   );
+}
 
-  return href ? (
-    <a
-      className="contact-row"
-      href={href}
-      target={href.startsWith('https') ? '_blank' : undefined}
-      rel="noreferrer"
-    >
-      {content}
-    </a>
-  ) : (
-    <div className="contact-row">{content}</div>
+function ContactPage() {
+  return (
+    <section className="page-section">
+      <div className="section-heading">
+        <span className="kicker">Contact us</span>
+        <h1>We’re happy to help.</h1>
+        <p>
+          Have a question about products or pricing? Contact us using
+          the details below.
+        </p>
+      </div>
+
+      <div className="contact-card">
+        <ContactRow
+          icon={<MapPin size={22} />}
+          title="Our location"
+        >
+          <p>{BUSINESS_AREA}</p>
+        </ContactRow>
+
+        <ContactRow
+          icon={<Phone size={22} />}
+          title="Phone"
+        >
+          <a href={`tel:${BUSINESS_PHONE}`}>
+            {BUSINESS_PHONE}
+          </a>
+        </ContactRow>
+
+        <ContactRow
+          icon={<Clock size={22} />}
+          title="Business hours"
+        >
+          <p>{BUSINESS_HOURS}</p>
+        </ContactRow>
+
+        <ContactRow
+          icon={<MessageCircle size={22} />}
+          title="WhatsApp"
+        >
+          <a
+            href={`https://wa.me/${OWNER_WHATSAPP}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Chat with us on WhatsApp
+          </a>
+        </ContactRow>
+      </div>
+
+      <div className="contact-cta">
+        <h2>Ready to make an inquiry?</h2>
+        <p>Select your products and send us your list through WhatsApp.</p>
+        <a
+          className="button button-primary"
+          href={`https://wa.me/${OWNER_WHATSAPP}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Contact us on WhatsApp
+          <ArrowRight size={18} />
+        </a>
+      </div>
+    </section>
   );
 }
 
