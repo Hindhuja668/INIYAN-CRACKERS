@@ -564,3 +564,328 @@ function Home({
     </>
   );
         }
+function ProductsPage({
+  addToCart,
+}: {
+  addToCart: (
+    id: number,
+    quantity: number
+  ) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
+
+  const categories = [
+    'All',
+    ...Array.from(
+      new Set(products.map((product) => product.category))
+    ),
+  ];
+
+  const shown = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          (category === 'All' ||
+            product.category === category) &&
+          product.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    [category, search]
+  );
+
+  return (
+    <section className="section page-section">
+      <div className="page-title">
+        <div>
+          <span className="kicker">The collection</span>
+          <h1>Choose your celebration.</h1>
+          <p>
+            {products.length} products · Market and sale prices shown clearly.
+          </p>
+        </div>
+
+        <div className="search-box">
+          <Search size={18} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search products"
+          />
+        </div>
+      </div>
+
+      <div className="filter-row">
+        {categories.map((item) => (
+          <button
+            key={item}
+            className={category === item ? 'filter active' : 'filter'}
+            onClick={() => setCategory(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <div className="product-grid">
+        {shown.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            addToCart={addToCart}
+          />
+        ))}
+      </div>
+
+      {shown.length === 0 && (
+        <div className="empty-state">
+          <Search size={32} />
+          <h3>No products found</h3>
+          <p>Try a different search or category.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ProductCard({
+  product,
+  addToCart,
+}: {
+  product: Product;
+  addToCart: (
+    id: number,
+    quantity: number
+  ) => void;
+}) {
+  const [quantity, setQuantity] = useState(1);
+
+  const savings = product.marketPrice - product.salePrice;
+
+  return (
+    <article className="product-card">
+      <div
+        className={`product-art art-${product.id % 6} category-${product.category
+          .toLowerCase()
+          .replace(/\s+/g, '-')}`}
+      >
+        <Sparkles size={38} />
+        <span>{product.category}</span>
+      </div>
+
+      <div className="product-info">
+        <span className="product-category">{product.category}</span>
+        <h3>{product.name}</h3>
+
+        <div className="prices">
+          <span className="market">
+            Market {money(product.marketPrice)}
+          </span>
+          <strong>Sale {money(product.salePrice)}</strong>
+          <small>Save {money(savings)}</small>
+        </div>
+
+        <div className="card-actions">
+          <div className="quantity">
+            <button
+              aria-label="Decrease quantity"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+              <Minus size={14} />
+            </button>
+
+            <span>{quantity}</span>
+
+            <button
+              aria-label="Increase quantity"
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          <button
+            className="add-button"
+            disabled={!product.available}
+            onClick={() => addToCart(product.id, quantity)}
+          >
+            {product.available ? 'Add to inquiry' : 'Unavailable'}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function InquiryPage({
+  cart,
+  totals,
+  updateQuantity,
+  removeItem,
+  navigate,
+}: {
+  cart: CartItem[];
+  totals: Totals;
+  updateQuantity: (id: number, change: number) => void;
+  removeItem: (id: number) => void;
+  navigate: (page: Page) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+
+  return (
+    <section className="section page-section">
+      <div className="page-title compact">
+        <div>
+          <span className="kicker">Your selection</span>
+          <h1>Inquiry list.</h1>
+          <p>
+            Review your products before sending your request.
+          </p>
+        </div>
+
+        <div className="inquiry-count">
+          <List size={17} />
+          {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+        </div>
+      </div>
+
+      {cart.length === 0 ? (
+        <div className="empty-state cart-empty">
+          <Package size={40} />
+          <h3>Your inquiry is empty</h3>
+          <p>Add products to see them here and get your total.</p>
+
+          <button
+            className="button primary"
+            onClick={() => navigate('products')}
+          >
+            Browse products
+            <ArrowRight size={17} />
+          </button>
+        </div>
+      ) : (
+        <div className="inquiry-layout">
+          <div className="inquiry-list">
+            {cart.map((item) => {
+              const product = products.find(
+                (entry) => entry.id === item.productId
+              );
+
+              if (!product) return null;
+
+              return (
+                <div className="inquiry-item" key={product.id}>
+                  <div className={`mini-art art-${product.id % 6}`}>
+                    <Sparkles size={22} />
+                  </div>
+
+                  <div className="item-main">
+                    <h3>{product.name}</h3>
+                    <p>
+                      Market {money(product.marketPrice)}{' '}
+                      <span>·</span> Sale {money(product.salePrice)}
+                    </p>
+                  </div>
+
+                  <div className="quantity">
+                    <button
+                      onClick={() => updateQuantity(product.id, -1)}
+                    >
+                      <Minus size={14} />
+                    </button>
+
+                    <span>{item.quantity}</span>
+
+                    <button
+                      onClick={() => updateQuantity(product.id, 1)}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+
+                  <strong className="item-subtotal">
+                    {money(product.salePrice * item.quantity)}
+                  </strong>
+
+                  <button
+                    className="remove-button"
+                    aria-label={`Remove ${product.name}`}
+                    onClick={() => removeItem(product.id)}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                </div>
+              );
+            })}
+
+            <button
+              className="continue-button"
+              onClick={() => navigate('products')}
+            >
+              <ChevronLeft size={16} />
+              Continue shopping
+            </button>
+          </div>
+
+          <Summary
+            totals={totals}
+            onProceed={() => setShowForm(true)}
+          />
+        </div>
+      )}
+
+      {showForm && (
+        <CustomerForm
+          cart={cart}
+          totals={totals}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+    </section>
+  );
+}
+
+function Summary({
+  totals,
+  onProceed,
+}: {
+  totals: Totals;
+  onProceed: () => void;
+}) {
+  return (
+    <aside className="summary">
+      <h2>Inquiry summary</h2>
+
+      <div className="summary-line">
+        <span>Market price total</span>
+        <strong>{money(totals.market)}</strong>
+      </div>
+
+      <div className="summary-line sale-line">
+        <span>Sale price total</span>
+        <strong>{money(totals.sale)}</strong>
+      </div>
+
+      <div className="saving-line">
+        <Check size={15} />
+        You save {money(totals.savings)}
+      </div>
+
+      <div className="total-line">
+        <span>Total</span>
+        <strong>{money(totals.sale)}</strong>
+      </div>
+
+      <button
+        className="button primary full"
+        onClick={onProceed}
+      >
+        Proceed to inquiry
+        <ArrowRight size={17} />
+      </button>
+
+      <p className="summary-note">
+        No payment required. We’ll prepare your inquiry in WhatsApp.
+      </p>
+    </aside>
+  );
+              }
