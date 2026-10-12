@@ -889,3 +889,628 @@ function Summary({
     </aside>
   );
               }
+function CustomerForm({
+  cart,
+  totals,
+  onClose,
+}: {
+  cart: CartItem[];
+  totals: Totals;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    mobile: '',
+    area: '',
+    message: '',
+  });
+
+  const [error, setError] = useState('');
+
+  const submit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    const mobile = form.mobile.replace(/\D/g, '');
+
+    if (
+      !form.name.trim() ||
+      !mobile ||
+      !form.area.trim()
+    ) {
+      setError('Please complete all required fields.');
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setError('Enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+
+    const invoiceId = `INI-${Date.now().toString().slice(-6)}`;
+    const invoiceDate = new Date().toLocaleDateString('en-IN');
+
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    const right = pageWidth - margin;
+
+    // Invoice heading and seller details
+    doc.setFillColor(255, 247, 237);
+    doc.rect(0, 0, pageWidth, 48, 'F');
+
+    doc.setTextColor(145, 55, 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(21);
+    doc.text(BUSINESS_NAME.toUpperCase(), margin, 17);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(65, 65, 65);
+    doc.text(BUSINESS_AREA || 'Crackers & Fireworks', margin, 24);
+    doc.text(`Cell: ${BUSINESS_PHONE}`, margin, 30);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('INVOICE', right, 17, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Invoice ID: ${invoiceId}`, right, 25, {
+      align: 'right',
+    });
+    doc.text(`Date: ${invoiceDate}`, right, 31, {
+      align: 'right',
+    });
+
+    // Customer details
+    doc.setTextColor(30, 30, 30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Customer Details', margin, 59);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Name: ${form.name.trim()}`, margin, 66);
+    doc.text(`Mobile: ${mobile}`, margin, 72);
+    doc.text(`Area: ${form.area.trim()}`, margin, 78);
+
+    // Product table
+    let y = 91;
+
+    const columns = {
+      sno: margin + 1,
+      code: margin + 13,
+      name: margin + 31,
+      qty: right - 48,
+      rate: right - 29,
+      amount: right,
+    };
+
+    const drawTableHeader = () => {
+      doc.setFillColor(145, 55, 20);
+      doc.rect(
+        margin,
+        y - 6,
+        pageWidth - margin * 2,
+        10,
+        'F'
+      );
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+
+      doc.text('S.NO', columns.sno, y);
+      doc.text('CODE', columns.code, y);
+      doc.text('PRODUCT NAME', columns.name, y);
+      doc.text('QTY', columns.qty, y, { align: 'right' });
+      doc.text('RATE (Rs.)', columns.rate, y, {
+        align: 'right',
+      });
+      doc.text('AMOUNT (Rs.)', columns.amount, y, {
+        align: 'right',
+      });
+
+      y += 10;
+      doc.setTextColor(35, 35, 35);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+    };
+
+    drawTableHeader();
+
+    cart.forEach((item, index) => {
+      const product = products.find(
+        (entry) => entry.id === item.productId
+      );
+
+      if (!product) return;
+
+      if (y > 265) {
+        doc.addPage();
+        y = 20;
+        drawTableHeader();
+      }
+
+      const nameLines = doc.splitTextToSize(
+        product.name,
+        67
+      ) as string[];
+
+      const rowHeight = Math.max(
+        8,
+        nameLines.length * 4 + 3
+      );
+
+      if (index % 2 === 1) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(
+          margin,
+          y - 5,
+          pageWidth - margin * 2,
+          rowHeight,
+          'F'
+        );
+      }
+
+      doc.text(String(index + 1), columns.sno, y);
+      doc.text(String(product.id), columns.code, y);
+      doc.text(nameLines, columns.name, y);
+
+      doc.text(String(item.quantity), columns.qty, y, {
+        align: 'right',
+      });
+
+      doc.text(
+        product.salePrice.toLocaleString('en-IN'),
+        columns.rate,
+        y,
+        { align: 'right' }
+      );
+
+      doc.text(
+        (product.salePrice * item.quantity).toLocaleString('en-IN'),
+        columns.amount,
+        y,
+        { align: 'right' }
+      );
+
+      y += rowHeight;
+    });
+
+    y += 5;
+
+    if (y > 260) {
+      doc.addPage();
+      y = 25;
+    }
+
+    doc.setDrawColor(210, 210, 210);
+    doc.line(margin, y, right, y);
+
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    doc.text('Market Price Total', right - 55, y);
+    doc.text(
+      totals.market.toLocaleString('en-IN'),
+      right,
+      y,
+      { align: 'right' }
+    );
+
+    y += 7;
+    doc.text('Discount / Savings', right - 55, y);
+    doc.text(
+      totals.savings.toLocaleString('en-IN'),
+      right,
+      y,
+      { align: 'right' }
+    );
+
+    y += 8;
+    doc.setFillColor(255, 247, 237);
+    doc.rect(right - 75, y - 5, 75, 13, 'F');
+
+    doc.setTextColor(145, 55, 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+
+    doc.text('TOTAL (Rs.)', right - 70, y + 3);
+    doc.text(
+      totals.sale.toLocaleString('en-IN'),
+      right - 3,
+      y + 3,
+      { align: 'right' }
+    );
+
+    if (form.message.trim()) {
+      y += 20;
+
+      doc.setTextColor(35, 35, 35);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('Additional Message:', margin, y);
+
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        doc.splitTextToSize(
+          form.message.trim(),
+          pageWidth - margin * 2
+        ),
+        margin,
+        y + 6
+      );
+    }
+
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(
+      'Thank you for choosing Iniyan Crackers!',
+      pageWidth / 2,
+      286,
+      { align: 'center' }
+    );
+
+    const pdfBlob = doc.output('blob');
+    const pdfFile = new File(
+      [pdfBlob],
+      `${invoiceId}.pdf`,
+      { type: 'application/pdf' }
+    );
+
+    const whatsappText =
+      `Hello ${BUSINESS_NAME}, I would like to submit my crackers inquiry.\n` +
+      `Invoice: ${invoiceId}\n` +
+      `Name: ${form.name.trim()}\n` +
+      `Mobile: ${mobile}\n` +
+      `Area: ${form.area.trim()}\n` +
+      `Total: ${money(totals.sale)}` +
+      (form.message.trim()
+        ? `\nMessage: ${form.message.trim()}`
+        : '');
+
+    // Share the actual PDF when supported by the browser.
+    try {
+      if (
+        navigator.share &&
+        navigator.canShare?.({ files: [pdfFile] })
+      ) {
+        await navigator.share({
+          files: [pdfFile],
+          title: `${BUSINESS_NAME} invoice`,
+          text: whatsappText,
+        });
+
+        onClose();
+        return;
+      }
+    } catch (shareError) {
+      if (
+        shareError instanceof Error &&
+        shareError.name === 'AbortError'
+      ) {
+        return;
+      }
+    }
+
+    // Fallback: download the PDF and open the owner's WhatsApp chat.
+    doc.save(`${invoiceId}.pdf`);
+
+    window.open(
+      `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(
+        `${whatsappText}\n\nPlease find my invoice PDF attached.`
+      )}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+
+    setError(
+      'Invoice PDF downloaded. In WhatsApp, attach the downloaded PDF before sending your inquiry.'
+    );
+  };
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+    >
+      <form
+        className="details-form"
+        onSubmit={submit}
+      >
+        <button
+          type="button"
+          className="close-button"
+          onClick={onClose}
+        >
+          <X size={20} />
+        </button>
+
+        <span className="kicker">Almost there</span>
+        <h2>Customer details.</h2>
+
+        <p>
+          We’ll open WhatsApp only after you submit these details.
+        </p>
+
+        <label>
+          Name *
+          <input
+            required
+            value={form.name}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                name: event.target.value,
+              })
+            }
+            placeholder="Your full name"
+          />
+        </label>
+
+        <label>
+          Mobile number *
+          <input
+            required
+            inputMode="numeric"
+            value={form.mobile}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                mobile: event.target.value,
+              })
+            }
+            placeholder="10-digit mobile number"
+          />
+        </label>
+
+        <label>
+          Area / location *
+          <input
+            required
+            value={form.area}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                area: event.target.value,
+              })
+            }
+            placeholder="Where should we reach you?"
+          />
+        </label>
+
+        <label>
+          Additional message
+          <textarea
+            value={form.message}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                message: event.target.value,
+              })
+            }
+            placeholder="Any preferences or questions?"
+            rows={3}
+          />
+        </label>
+
+        {error && (
+          <p className="form-error">{error}</p>
+        )}
+
+        <button
+          className="button primary full"
+          type="submit"
+        >
+          <MessageCircle size={18} />
+          Submit inquiry on WhatsApp
+        </button>
+      </form>
+    </div>
+  );
+}
+function About({
+  navigate,
+}: {
+  navigate: (page: Page) => void;
+}) {
+  return (
+    <section className="section page-section about-page">
+      <div className="about-hero">
+        <div>
+          <span className="kicker">Our story</span>
+
+          <h1>
+            Bringing joy to your celebrations.
+          </h1>
+
+          <p>
+            Iniyan Crackers brings you a wide
+            range of quality fireworks at factory
+            prices, so every family can celebrate
+            with confidence.
+          </p>
+        </div>
+
+        <div className="about-seal">
+          <Sparkles size={30} />
+        </div>
+      </div>
+
+      <div className="values-grid">
+        <Value
+          icon={<ShieldCheck />}
+          title="Quality first"
+          text="Every product is selected with care for a bright, dependable celebration."
+        />
+
+        <Value
+          icon={<HeartHandshake />}
+          title="Helpful service"
+          text="Tell us what you need and we’ll help you build the right inquiry."
+        />
+
+        <Value
+          icon={<Package />}
+          title="More variety"
+          text="From sparklers and flower pots to rockets and repeating cakes."
+        />
+      </div>
+
+      <div className="about-callout">
+        <div>
+          <span className="kicker">Ready to celebrate?</span>
+
+          <h2>
+            Make your list.
+            <br />
+            We’ll take it from there.
+          </h2>
+        </div>
+
+        <button
+          className="button primary"
+          onClick={() => navigate('products')}
+        >
+          Browse products
+          <ArrowRight size={17} />
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function Value({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="value-card">
+      <div className="value-icon">{icon}</div>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+function Contact() {
+  return (
+    <section className="section page-section contact-page">
+      <div className="page-title">
+        <div>
+          <span className="kicker">We’re here to help</span>
+          <h1>Contact us.</h1>
+
+          <p>
+            Have a question about a product or your inquiry? Reach out.
+          </p>
+        </div>
+      </div>
+
+      <div className="contact-grid">
+        <div className="contact-card">
+          <ContactRow
+            icon={<Phone />}
+            title="Call us"
+            value={BUSINESS_PHONE}
+            href={`tel:${BUSINESS_PHONE.replace(/\s/g, '')}`}
+          />
+
+          <ContactRow
+            icon={<MessageCircle />}
+            title="WhatsApp"
+            value="Chat with our team"
+            href={`https://wa.me/${OWNER_WHATSAPP}`}
+          />
+
+          <ContactRow
+            icon={<MapPin />}
+            title="Our area"
+            value={BUSINESS_AREA}
+          />
+
+          <ContactRow
+            icon={<Clock3 />}
+            title="Business hours"
+            value={BUSINESS_HOURS}
+          />
+        </div>
+
+        <div className="contact-panel">
+          <Sparkles size={32} />
+
+          <h2>
+            Let’s make your celebration brighter.
+          </h2>
+
+          <p>
+            Send us your product list through WhatsApp and we’ll get back to you with the details.
+          </p>
+
+          <a
+            className="button primary"
+            href={`https://wa.me/${OWNER_WHATSAPP}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle size={17} />
+            Chat on WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactRow({
+  icon,
+  title,
+  value,
+  href,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: string;
+  href?: string;
+}) {
+  const content = (
+    <>
+      <div className="contact-icon">{icon}</div>
+
+      <div>
+        <span>{title}</span>
+        <strong>{value}</strong>
+      </div>
+    </>
+  );
+
+  return href ? (
+    <a
+      className="contact-row"
+      href={href}
+      target={href.startsWith('https') ? '_blank' : undefined}
+      rel="noreferrer"
+    >
+      {content}
+    </a>
+  ) : (
+    <div className="contact-row">{content}</div>
+  );
+}
+
+export default App;
