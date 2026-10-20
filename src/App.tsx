@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { jsPDF } from 'jspdf';
 import {
   ArrowRight,
   Check,
@@ -771,12 +770,11 @@ function Summary({
       </button>
 
       <p className="summary-note">
-        No payment required. We’ll prepare your inquiry in WhatsApp.
+        No payment required. Create and share your invoice image.
       </p>
     </aside>
   );
-              }
-      }
+}
 
 function CustomerForm({
   cart,
@@ -791,20 +789,18 @@ function CustomerForm({
     name: '',
     mobile: '',
     area: '',
-    message: '',
   });
 
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
 
     const name = form.name.trim();
     const mobile = form.mobile.replace(/\D/g, '');
     const area = form.area.trim();
-    const message = form.message.trim();
 
     if (!name || !mobile || !area) {
       setError('Please fill in your name, mobile number and area.');
@@ -816,10 +812,8 @@ function CustomerForm({
       return;
     }
 
-    const ownerNumber = OWNER_WHATSAPP.replace(/\D/g, '');
-
-    if (!ownerNumber) {
-      setError('WhatsApp number is not configured. Please contact the shop.');
+    if (cart.length === 0) {
+      setError('Please add at least one product to your inquiry.');
       return;
     }
 
@@ -828,218 +822,147 @@ function CustomerForm({
     try {
       const invoiceId = `INI-${Date.now().toString().slice(-6)}`;
       const invoiceDate = new Date().toLocaleDateString('en-IN');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
 
-      const doc = new jsPDF({
-        unit: 'mm',
-        format: 'a4',
-      });
+      if (!ctx) {
+        throw new Error('Could not create invoice image.');
+      }
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 14;
-      const right = pageWidth - margin;
+      const width = 1000;
+      const headerHeight = 250;
+      const rowHeight = 48;
+      const footerHeight = 190;
+      const height = headerHeight + cart.length * rowHeight + footerHeight;
+      canvas.width = width;
+      canvas.height = height;
 
-      const drawTableHeader = (y: number) => {
-        doc.setFillColor(255, 237, 213);
-        doc.rect(margin, y, pageWidth - margin * 2, 9, 'F');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(80, 50, 30);
-
-        doc.text('Product', margin + 2, y + 6);
-        doc.text('Qty', right - 62, y + 6, { align: 'right' });
-        doc.text('Market', right - 40, y + 6, { align: 'right' });
-        doc.text('Sale', right - 21, y + 6, { align: 'right' });
-        doc.text('Total', right - 2, y + 6, { align: 'right' });
-      };
+      // White invoice background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
 
       // Invoice header
-      doc.setFillColor(255, 247, 237);
-      doc.rect(0, 0, pageWidth, 47, 'F');
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 34px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(BUSINESS_NAME, 35, 52);
 
-      doc.setTextColor(124, 45, 18);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(21);
-      doc.text(BUSINESS_NAME, margin, 17);
+      ctx.fillStyle = '#333333';
+      ctx.font = '20px Arial';
+      ctx.fillText(BUSINESS_AREA, 35, 87);
+      ctx.fillText(`Phone: ${BUSINESS_PHONE}`, 35, 117);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(BUSINESS_AREA, margin, 25);
-      doc.text(`Phone: ${BUSINESS_PHONE}`, margin, 32);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText('INQUIRY INVOICE', width - 35, 52);
+      ctx.fillStyle = '#333333';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Invoice: ${invoiceId}`, width - 35, 87);
+      ctx.fillText(`Date: ${invoiceDate}`, width - 35, 117);
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text('INQUIRY INVOICE', right, 17, {
-        align: 'right',
-      });
+      // Customer details panel
+      ctx.fillStyle = '#fff7ed';
+      ctx.fillRect(25, 145, width - 50, 90);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#222222';
+      ctx.font = 'bold 22px Arial';
+      ctx.fillText('CUSTOMER DETAILS', 40, 174);
+      ctx.font = '20px Arial';
+      ctx.fillText(`Name: ${name}`, 40, 205);
+      ctx.fillText(`Mobile: ${mobile}`, 380, 205);
+      ctx.fillText(`Area: ${area}`, 680, 205);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Invoice: ${invoiceId}`, right, 25, {
-        align: 'right',
-      });
-      doc.text(`Date: ${invoiceDate}`, right, 32, {
-        align: 'right',
-      });
+      // Product table header
+      let y = headerHeight;
+      ctx.fillStyle = '#7c2d12';
+      ctx.fillRect(25, y, width - 50, 48);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 19px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('S.NO', 40, y + 30);
+      ctx.fillText('PRODUCT NAME', 120, y + 30);
+      ctx.textAlign = 'right';
+      ctx.fillText('QTY', 690, y + 30);
+      ctx.fillText('RATE', 830, y + 30);
+      ctx.fillText('AMOUNT', 955, y + 30);
+      y += 48;
 
-      // Customer details
-      let y = 58;
+      cart.forEach(({ product, quantity }, index) => {
+        ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#fff7ed';
+        ctx.fillRect(25, y, width - 50, rowHeight);
+        ctx.strokeStyle = '#cccccc';
+        ctx.strokeRect(25, y, width - 50, rowHeight);
 
-      doc.setTextColor(40, 40, 40);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Customer Details', margin, y);
+        ctx.fillStyle = '#222222';
+        ctx.font = '19px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(String(index + 1), 40, y + 30);
 
-      y += 8;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text(`Name: ${name}`, margin, y);
-
-      y += 6;
-      doc.text(`Mobile: ${mobile}`, margin, y);
-
-      y += 6;
-      doc.text(`Area: ${area}`, margin, y);
-
-      y += 12;
-      drawTableHeader(y);
-      y += 14;
-
-      // Product rows
-      cart.forEach(({ product, quantity }) => {
-        const nameLines = doc.splitTextToSize(product.name, 68);
-        const rowHeight = Math.max(8, nameLines.length * 4.5 + 2);
-
-        if (y + rowHeight > pageHeight - 42) {
-          doc.addPage();
-          y = 18;
-          drawTableHeader(y);
-          y += 14;
+        let productName = product.name;
+        while (ctx.measureText(productName).width > 490 && productName.length > 5) {
+          productName = `${productName.slice(0, -4)}...`;
         }
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(45, 45, 45);
-
-        doc.text(nameLines, margin + 2, y);
-
-        doc.text(String(quantity), right - 62, y, {
-          align: 'right',
-        });
-
-        doc.text(money(product.marketPrice), right - 40, y, {
-          align: 'right',
-        });
-
-        doc.text(money(product.salePrice), right - 21, y, {
-          align: 'right',
-        });
-
-        doc.text(
-          money(product.salePrice * quantity),
-          right - 2,
-          y,
-          { align: 'right' },
-        );
-
+        ctx.fillText(productName, 120, y + 30);
+        ctx.textAlign = 'right';
+        ctx.fillText(String(quantity), 690, y + 30);
+        ctx.fillText(money(product.salePrice), 830, y + 30);
+        ctx.fillText(money(product.salePrice * quantity), 955, y + 30);
         y += rowHeight;
-
-        doc.setDrawColor(235, 235, 235);
-        doc.line(margin, y - 2, right, y - 2);
       });
 
-      // Totals
-      if (y + 42 > pageHeight - 12) {
-        doc.addPage();
-        y = 20;
+      // Totals panel
+      y += 22;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#333333';
+      ctx.font = '22px Arial';
+      ctx.fillText(`Market Price Total: ${money(totals.market)}`, width - 40, y);
+      y += 36;
+      ctx.fillText(`You Save: ${money(totals.savings)}`, width - 40, y);
+      y += 42;
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 30px Arial';
+      ctx.fillText(`TOTAL: ${money(totals.sale)}`, width - 40, y);
+      ctx.textAlign = 'left';
+
+      // Share only the invoice image. No WhatsApp text message is created.
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error('Could not create invoice image.'));
+        }, 'image/png');
+      });
+
+      const imageFile = new File([blob], `${invoiceId}.png`, {
+        type: 'image/png',
+      });
+
+      if (
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [imageFile] })
+      ) {
+        await navigator.share({ files: [imageFile] });
+      } else {
+        const imageUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `${invoiceId}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+        setError('Invoice image downloaded. Open WhatsApp and attach the PNG image manually.');
       }
-
-      y += 5;
-
-      const addTotal = (
-        label: string,
-        amount: number,
-        bold = false,
-      ) => {
-        doc.setFont('helvetica', bold ? 'bold' : 'normal');
-        doc.setFontSize(bold ? 11 : 10);
-        doc.setTextColor(55, 55, 55);
-
-        doc.text(label, right - 65, y);
-        doc.text(money(amount), right, y, {
-          align: 'right',
-        });
-
-        y += bold ? 8 : 6;
-      };
-
-      addTotal('Market Price Total', totals.market);
-      addTotal('You Save', totals.savings);
-      addTotal('Sale Price Total', totals.sale, true);
-
-      // Optional message
-      if (message) {
-        y += 5;
-
-        if (y + 20 > pageHeight - 12) {
-          doc.addPage();
-          y = 20;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text('Additional Message', margin, y);
-
-        y += 6;
-
-        doc.setFont('helvetica', 'normal');
-
-        const messageLines = doc.splitTextToSize(
-          message,
-          pageWidth - margin * 2,
-        );
-
-        doc.text(messageLines, margin, y);
-      }
-
-      // WhatsApp message
-      const productLines = cart
-        .map(
-          ({ product, quantity }) =>
-            `${product.name}    ${quantity}    ${money(
-              product.salePrice * quantity,
-            )}`,
-        )
-        .join('\n');
-
-      const whatsappText =
-        `Hello ${BUSINESS_NAME}, I would like to submit my crackers inquiry.\n\n` +
-        `Invoice: ${invoiceId}\n` +
-        `Name: ${name}\n` +
-        `Mobile: ${mobile}\n` +
-        `Area: ${area}\n\n` +
-        `Name        Qty        Price\n` +
-        `${productLines}\n\n` +
-        `Market Price Total: ${money(totals.market)}\n` +
-        `You Save: ${money(totals.savings)}\n` +
-        `TOTAL: ${money(totals.sale)}` +
-        (message ? `\n\nAdditional Message: ${message}` : '') +
-        `\n\nPlease find the invoice PDF attached separately.`;
-
-      const whatsappUrl =
-        `https://wa.me/${ownerNumber}?text=${encodeURIComponent(whatsappText)}`;
-
-      // Open WhatsApp directly; download invoice separately.
-      doc.save(`${invoiceId}.pdf`);
-
-      window.location.href = whatsappUrl;
     } catch (submitError) {
-      console.error('Inquiry submission failed:', submitError);
-      setError(
-        'Could not prepare your inquiry. Please try again.',
-      );
+      // Closing the share sheet can also reject navigator.share().
+      const errorName =
+        submitError instanceof Error ? submitError.name : '';
+      if (errorName !== 'AbortError') {
+        console.error('Inquiry image sharing failed:', submitError);
+        setError('Could not prepare the invoice image. Please try again.');
+      }
+    } finally {
       setSubmitting(false);
     }
   };
@@ -1066,8 +989,7 @@ function CustomerForm({
         <h2 id="customer-form-title">Customer details.</h2>
 
         <p>
-          Enter your details to prepare your invoice and open
-          the WhatsApp inquiry.
+          Enter your details to create an invoice image to share on WhatsApp.
         </p>
 
         <label>
@@ -1113,17 +1035,6 @@ function CustomerForm({
           />
         </label>
 
-        <label>
-          Additional message (optional)
-          <textarea
-            value={form.message}
-            onChange={(event) =>
-              setForm({ ...form, message: event.target.value })
-            }
-            placeholder="Any additional information?"
-            rows={3}
-          />
-        </label>
 
         {error && <p className="form-error">{error}</p>}
 
@@ -1132,7 +1043,7 @@ function CustomerForm({
           className="button button-primary submit-button"
           disabled={submitting}
         >
-          {submitting ? 'Preparing inquiry...' : 'Submit inquiry on WhatsApp'}
+          {submitting ? 'Preparing invoice image...' : 'Share invoice image'}
           <ArrowRight size={18} />
         </button>
       </form>
