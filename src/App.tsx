@@ -356,4 +356,741 @@ function Home({
           </div>
         </div>
 
-        <div
+        <div className="hero-art">
+          <div className="burst burst-one">✦</div>
+          <div className="burst burst-two">✦</div>
+          <div className="burst burst-three">✦</div>
+
+          <div className="rocket rocket-one">
+            <Zap size={38} />
+          </div>
+
+          <div className="rocket rocket-two">
+            <Flame size={30} />
+          </div>
+
+          <div className="hero-card">
+            <span>UP TO</span>
+            <strong>80%</strong>
+            <small>OFF</small>
+          </div>
+        </div>
+      </section>
+
+      <section className="trust-strip">
+        <div>
+          <ShieldCheck />
+          <span>
+            <b>Genuine quality</b>
+            <small>Carefully selected products</small>
+          </span>
+        </div>
+
+        <div>
+          <Package />
+          <span>
+            <b>Factory pricing</b>
+            <small>More value in every box</small>
+          </span>
+        </div>
+
+        <div>
+          <HeartHandshake />
+          <span>
+            <b>Personal service</b>
+            <small>We help you choose</small>
+          </span>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-heading">
+          <div>
+            <span className="kicker">Popular picks</span>
+            <h2>Made for memorable nights.</h2>
+          </div>
+
+          <button
+            className="text-button"
+            onClick={() => navigate('products')}
+          >
+            See all products
+            <ArrowRight size={16} />
+          </button>
+        </div>
+
+        <div className="product-grid featured-grid">
+          {featured.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              addToCart={addToCart}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="category-banner">
+        <div>
+          <span className="kicker">One list. Every celebration.</span>
+
+          <h2>
+            From a little sparkle
+            <br />
+            to a sky full of colour.
+          </h2>
+
+          <button
+            className="button primary"
+            onClick={() => navigate('products')}
+          >
+            Explore the collection
+            <ArrowRight size={17} />
+          </button>
+        </div>
+
+        <div className="category-pills">
+          <span>Ground chakkar</span>
+          <span>Rockets</span>
+          <span>Flower pots</span>
+          <span>Electric sparklers</span>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function ProductsPage({
+  addToCart,
+}: {
+  addToCart: (id: number, quantity: number) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
+
+  const categories = [
+    'All',
+    ...Array.from(new Set(products.map((product) => product.category))),
+  ];
+
+  const shown = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          (category === 'All' || product.category === category) &&
+          product.name.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [category, search],
+  );
+
+  return (
+    <section className="section page-section">
+      <div className="page-title">
+        <div>
+          <span className="kicker">The collection</span>
+          <h1>Choose your celebration.</h1>
+          <p>
+            {products.length} products · Market and sale prices shown clearly.
+          </p>
+        </div>
+
+        <div className="search-box">
+          <Search size={18} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search products"
+          />
+        </div>
+      </div>
+
+      <div className="filter-row">
+        {categories.map((item) => (
+          <button
+            key={item}
+            className={category === item ? 'filter active' : 'filter'}
+            onClick={() => setCategory(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <div className="product-grid">
+        {shown.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            addToCart={addToCart}
+          />
+        ))}
+      </div>
+
+      {shown.length === 0 && (
+        <div className="empty-state">
+          <Search size={32} />
+          <h3>No products found</h3>
+          <p>Try a different search or category.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ProductCard({
+  product,
+  addToCart,
+}: {
+  product: Product;
+  addToCart: (id: number, quantity: number) => void;
+}) {
+  const [quantity, setQuantity] = useState(1);
+  const savings = product.marketPrice - product.salePrice;
+
+  return (
+    <article className="product-card">
+      <div
+        className={`product-art art-${product.id % 6} category-${product.category
+          .toLowerCase()
+          .replace(/\s+/g, '-')}`}
+      >
+        <Sparkles size={38} />
+        <span>{product.category}</span>
+      </div>
+
+      <div className="product-info">
+        <span className="product-category">{product.category}</span>
+        <h3>{product.name}</h3>
+
+        <div className="prices">
+          <span className="market">
+            Market {money(product.marketPrice)}
+          </span>
+
+          <strong>Sale {money(product.salePrice)}</strong>
+          <small>Save {money(savings)}</small>
+        </div>
+
+        <div className="card-actions">
+          <div className="quantity">
+            <button
+              aria-label="Decrease quantity"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+              <Minus size={14} />
+            </button>
+
+            <span>{quantity}</span>
+
+            <button
+              aria-label="Increase quantity"
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          <button
+            className="add-button"
+            disabled={!product.available}
+            onClick={() => addToCart(product.id, quantity)}
+          >
+            {product.available ? 'Add to inquiry' : 'Unavailable'}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function InquiryPage({
+  cart,
+  totals,
+  updateQuantity,
+  removeItem,
+  navigate,
+}: {
+  cart: CartItem[];
+  totals: Totals;
+  updateQuantity: (id: number, change: number) => void;
+  removeItem: (id: number) => void;
+  navigate: (page: Page) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+
+  const cartProducts: CartProduct[] = cart.flatMap((item) => {
+    const product = products.find(
+      (entry) => entry.id === item.productId,
+    );
+
+    return product ? [{ product, quantity: item.quantity }] : [];
+  });
+
+  return (
+    <section className="section page-section">
+      <div className="page-title compact">
+        <div>
+          <span className="kicker">Your selection</span>
+          <h1>Inquiry list.</h1>
+          <p>Review your products before sending your request.</p>
+        </div>
+
+        <div className="inquiry-count">
+          <List size={17} />
+          {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+        </div>
+      </div>
+
+      {cartProducts.length === 0 ? (
+        <div className="empty-state cart-empty">
+          <Package size={40} />
+          <h3>Your inquiry is empty</h3>
+          <p>Add products to see them here and get your total.</p>
+
+          <button
+            className="button primary"
+            onClick={() => navigate('products')}
+          >
+            Browse products
+            <ArrowRight size={17} />
+          </button>
+        </div>
+      ) : (
+        <div className="inquiry-layout">
+          <div className="inquiry-list">
+            {cartProducts.map(({ product, quantity }) => (
+              <div className="inquiry-item" key={product.id}>
+                <div className={`mini-art art-${product.id % 6}`}>
+                  <Sparkles size={22} />
+                </div>
+
+                <div className="item-main">
+                  <h3>{product.name}</h3>
+                  <p>
+                    Market {money(product.marketPrice)}{' '}
+                    <span>·</span> Sale {money(product.salePrice)}
+                  </p>
+                </div>
+
+                <div className="quantity">
+                  <button
+                    onClick={() => updateQuantity(product.id, -1)}
+                    aria-label={`Decrease ${product.name} quantity`}
+                  >
+                    <Minus size={14} />
+                  </button>
+
+                  <span>{quantity}</span>
+
+                  <button
+                    onClick={() => updateQuantity(product.id, 1)}
+                    aria-label={`Increase ${product.name} quantity`}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <strong className="item-subtotal">
+                  {money(product.salePrice * quantity)}
+                </strong>
+
+                <button
+                  className="remove-button"
+                  aria-label={`Remove ${product.name}`}
+                  onClick={() => removeItem(product.id)}
+                >
+                  <Trash2 size={17} />
+                </button>
+              </div>
+            ))}
+
+            <button
+              className="continue-button"
+              onClick={() => navigate('products')}
+            >
+              <ChevronLeft size={16} />
+              Continue shopping
+            </button>
+          </div>
+
+          <Summary
+            totals={totals}
+            onProceed={() => setShowForm(true)}
+          />
+        </div>
+      )}
+
+      {showForm && (
+        <CustomerForm
+          cart={cartProducts}
+          totals={totals}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+    </section>
+  );
+}
+
+function Summary({
+  totals,
+  onProceed,
+}: {
+  totals: Totals;
+  onProceed: () => void;
+}) {
+  return (
+    <aside className="summary">
+      <h2>Inquiry summary</h2>
+
+      <div className="summary-line">
+        <span>Market price total</span>
+        <strong>{money(totals.market)}</strong>
+      </div>
+
+      <div className="summary-line sale-line">
+        <span>Sale price total</span>
+        <strong>{money(totals.sale)}</strong>
+      </div>
+
+      <div className="saving-line">
+        <Check size={15} />
+        You save {money(totals.savings)}
+      </div>
+
+      <div className="total-line">
+        <span>Total</span>
+        <strong>{money(totals.sale)}</strong>
+      </div>
+
+      <button
+        className="button primary full"
+        onClick={onProceed}
+      >
+        Proceed to inquiry
+        <ArrowRight size={17} />
+      </button>
+
+      <p className="summary-note">
+        No payment required. Create and share your invoice image.
+      </p>
+    </aside>
+  );
+}
+
+function CustomerForm({
+  cart,
+  totals,
+  onClose,
+}: {
+  cart: CartProduct[];
+  totals: Totals;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    mobile: '',
+    area: '',
+  });
+
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    const name = form.name.trim();
+    const mobile = form.mobile.replace(/\D/g, '');
+    const area = form.area.trim();
+
+    if (!name || !mobile || !area) {
+      setError('Please fill in your name, mobile number and area.');
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setError('Please enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+
+    if (cart.length === 0) {
+      setError('Please add at least one product to your inquiry.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const separator = '──────────────────';
+
+      const orderLines = cart.flatMap(({ product, quantity }) => [
+        `${product.name.padEnd(18, ' ')} ${String(quantity).padStart(3, ' ')}      ${money(product.salePrice)}`,
+        separator,
+      ]);
+
+      const message = [
+        '🎆 INIYAN CRACKERS',
+        '     ORDER INQUIRY',
+        '━━━━━━━━━━━━━━━━━━',
+        '',
+        `Name: ${name}`,
+        `Mobile: ${mobile}`,
+        `Area: ${area}`,
+        '',
+        '🛒 ORDER DETAILS',
+        '',
+        'Product          Qty      Price',
+        separator,
+        ...orderLines,
+        '',
+        `💰 TOTAL: ${money(totals.sale)}`,
+      ].join('\n');
+
+      const whatsappNumber = OWNER_WHATSAPP.replace(/\D/g, '');
+
+      const whatsappUrl =
+        `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    } catch (submitError) {
+      console.error('WhatsApp inquiry failed:', submitError);
+      setError('Could not open WhatsApp. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="customer-form-title"
+    >
+      <form className="details-form" onSubmit={submit}>
+        <button
+          type="button"
+          className="close-button"
+          onClick={onClose}
+          aria-label="Close form"
+        >
+          <X size={20} />
+        </button>
+
+        <span className="kicker">Almost there</span>
+
+        <h2 id="customer-form-title">Customer details.</h2>
+
+        <p>
+          Enter your details to send your inquiry through WhatsApp.
+        </p>
+
+        <label>
+          Name
+          <input
+            type="text"
+            autoComplete="name"
+            value={form.name}
+            onChange={(event) =>
+              setForm({ ...form, name: event.target.value })
+            }
+            placeholder="Your full name"
+            required
+          />
+        </label>
+
+        <label>
+          Mobile number
+          <input
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            value={form.mobile}
+            onChange={(event) =>
+              setForm({ ...form, mobile: event.target.value })
+            }
+            placeholder="10-digit mobile number"
+            required
+          />
+        </label>
+
+        <label>
+          Area / location
+          <input
+            type="text"
+            autoComplete="address-level2"
+            value={form.area}
+            onChange={(event) =>
+              setForm({ ...form, area: event.target.value })
+            }
+            placeholder="Your area or town"
+            required
+          />
+        </label>
+
+        {error && <p className="form-error">{error}</p>}
+
+        <button
+          type="submit"
+          className="button button-primary submit-button"
+          disabled={submitting}
+        >
+          {submitting ? 'Opening WhatsApp...' : 'Send inquiry on WhatsApp'}
+          <ArrowRight size={18} />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function AboutPage() {
+  return (
+    <section className="section page-section">
+      <div className="section-heading">
+        <span className="kicker">About us</span>
+        <h1>Making every celebration brighter.</h1>
+
+        <p>
+          At {BUSINESS_NAME}, we help families celebrate their
+          special moments with a selection of crackers at clear,
+          affordable prices.
+        </p>
+      </div>
+
+      <div className="about-grid">
+        <article className="about-card">
+          <Sparkles size={28} />
+          <h3>Celebration for everyone</h3>
+          <p>
+            Explore products for festivals, family gatherings and
+            special occasions.
+          </p>
+        </article>
+
+        <article className="about-card">
+          <Tag size={28} />
+          <h3>Clear pricing</h3>
+          <p>
+            Compare market prices and sale prices before adding
+            products to your inquiry.
+          </p>
+        </article>
+
+        <article className="about-card">
+          <MessageCircle size={28} />
+          <h3>Easy inquiries</h3>
+          <p>
+            Select your products and send your inquiry through
+            WhatsApp.
+          </p>
+        </article>
+      </div>
+
+      <div className="about-note">
+        <h2>Celebrate responsibly.</h2>
+        <p>
+          Follow local rules, read safety instructions and use
+          fireworks responsibly. Supervise children and maintain
+          a safe distance.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ContactRow({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="contact-row">
+      <div className="contact-icon">{icon}</div>
+
+      <div className="contact-row-content">
+        <h3>{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ContactPage() {
+  const whatsappNumber = OWNER_WHATSAPP.replace(/\D/g, '');
+
+  return (
+    <section className="section page-section">
+      <div className="section-heading">
+        <span className="kicker">Contact us</span>
+        <h1>We’re happy to help.</h1>
+
+        <p>
+          Have a question about products or pricing? Contact us
+          using the details below.
+        </p>
+      </div>
+
+      <div className="contact-card">
+        <ContactRow
+          icon={<MapPin size={22} />}
+          title="Our location"
+        >
+          <p>{BUSINESS_AREA}</p>
+        </ContactRow>
+
+        <ContactRow
+          icon={<Phone size={22} />}
+          title="Phone"
+        >
+          <a href={`tel:${BUSINESS_PHONE}`}>
+            {BUSINESS_PHONE}
+          </a>
+        </ContactRow>
+
+        <ContactRow
+          icon={<Clock3 size={22} />}
+          title="Business hours"
+        >
+          <p>{BUSINESS_HOURS}</p>
+        </ContactRow>
+
+        <ContactRow
+          icon={<MessageCircle size={22} />}
+          title="WhatsApp"
+        >
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Chat with us on WhatsApp
+          </a>
+        </ContactRow>
+      </div>
+
+      <div className="contact-cta">
+        <h2>Ready to make an inquiry?</h2>
+
+        <p>
+          Select your products and send us your list through WhatsApp.
+        </p>
+
+        <a
+          className="button primary"
+          href={`https://wa.me/${whatsappNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Contact us on WhatsApp
+          <ArrowRight size={18} />
+        </a>
+      </div>
+    </section>
+  );
+}
+
+export default App;
