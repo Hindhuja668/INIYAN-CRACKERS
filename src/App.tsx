@@ -302,7 +302,7 @@ function App() {
       </a>
     </div>
   );
-}
+  
 function Home({
   navigate,
   addToCart,
@@ -432,6 +432,7 @@ function Home({
       <section className="category-banner">
         <div>
           <span className="kicker">One list. Every celebration.</span>
+
           <h2>
             From a little sparkle
             <br />
@@ -456,547 +457,747 @@ function Home({
       </section>
     </>
   );
-} 
+}
+
 function ProductsPage({
-  cart,
-  onAdd,
-  onRemove,
-  onUpdateQuantity,
+  addToCart,
 }: {
-  cart: CartItem[];
-  onAdd: (product: Product) => void;
-  onRemove: (productId: number) => void;
-  onUpdateQuantity: (productId: number, quantity: number) => void;
+  addToCart: (id: number, quantity: number) => void;
 }) {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
 
   const categories = [
-    "All",
+    'All',
     ...Array.from(new Set(products.map((product) => product.category))),
   ];
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-    const matchesCategory =
-      category === "All" || product.category === category;
-
-    return matchesSearch && matchesCategory;
-  });
-
-  const getCartQuantity = (productId: number) => {
-    return cart.find((item) => item.product.id === productId)?.quantity ?? 0;
-  };
+  const shown = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          (category === 'All' || product.category === category) &&
+          product.name.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [category, search],
+  );
 
   return (
-    <main className="page-container products-page">
-      <div className="page-heading">
-        <span className="eyebrow">OUR COLLECTION</span>
-        <h1>Our Products</h1>
-        <p>Explore our crackers collection and choose your favourites.</p>
+    <section className="section page-section">
+      <div className="page-title">
+        <div>
+          <span className="kicker">The collection</span>
+          <h1>Choose your celebration.</h1>
+          <p>
+            {products.length} products · Market and sale prices shown clearly.
+          </p>
+        </div>
+
+        <div className="search-box">
+          <Search size={18} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search products"
+          />
+        </div>
       </div>
 
-      <div className="products-toolbar">
-        <input
-          type="search"
-          placeholder="Search products..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          aria-label="Search products"
-        />
-
-        <select
-          value={category}
-          onChange={(event) => setCategory(event.target.value)}
-          aria-label="Filter by category"
-        >
-          {categories.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+      <div className="filter-row">
+        {categories.map((item) => (
+          <button
+            key={item}
+            className={category === item ? 'filter active' : 'filter'}
+            onClick={() => setCategory(item)}
+          >
+            {item}
+          </button>
+        ))}
       </div>
 
-      <div className="products-grid">
-        {filteredProducts.map((product) => (
+      <div className="product-grid">
+        {shown.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
-            quantity={getCartQuantity(product.id)}
-            onAdd={() => onAdd(product)}
-            onRemove={() => onRemove(product.id)}
-            onUpdateQuantity={(quantity) =>
-              onUpdateQuantity(product.id, quantity)
-            }
+            addToCart={addToCart}
           />
         ))}
       </div>
 
-      {filteredProducts.length === 0 && (
+      {shown.length === 0 && (
         <div className="empty-state">
+          <Search size={32} />
           <h3>No products found</h3>
-          <p>Try another product name or category.</p>
+          <p>Try a different search or category.</p>
         </div>
       )}
-    </main>
+    </section>
   );
 }
 
 function ProductCard({
   product,
-  quantity,
-  onAdd,
-  onRemove,
-  onUpdateQuantity,
+  addToCart,
 }: {
   product: Product;
-  quantity: number;
-  onAdd: () => void;
-  onRemove: () => void;
-  onUpdateQuantity: (quantity: number) => void;
+  addToCart: (id: number, quantity: number) => void;
 }) {
+  const [quantity, setQuantity] = useState(1);
+  const savings = product.marketPrice - product.salePrice;
+
   return (
     <article className="product-card">
-      <div className={`product-art art-${product.id % 6}`}>
-        <Sparkles size={32} />
+      <div
+        className={`product-art art-${product.id % 6} category-${product.category
+          .toLowerCase()
+          .replace(/\s+/g, '-')}`}
+      >
+        <Sparkles size={38} />
+        <span>{product.category}</span>
       </div>
 
-      <div className="product-card-content">
+      <div className="product-info">
         <span className="product-category">{product.category}</span>
-
         <h3>{product.name}</h3>
 
-        <div className="product-prices">
-          <span className="market-price">
-            Market Price: {money(product.marketPrice)}
+        <div className="prices">
+          <span className="market">
+            Market {money(product.marketPrice)}
           </span>
 
-          <span className="sale-price">
-            Sale Price: {money(product.salePrice)}
-          </span>
+          <strong>Sale {money(product.salePrice)}</strong>
+          <small>Save {money(savings)}</small>
         </div>
 
-        <div className="product-card-actions">
-          {quantity === 0 ? (
-            <button className="btn btn-primary" onClick={onAdd}>
-              <Plus size={16} />
-              Add to List
+        <div className="card-actions">
+          <div className="quantity">
+            <button
+              aria-label="Decrease quantity"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+              <Minus size={14} />
             </button>
-          ) : (
-            <div className="quantity-control">
-              <button
-                type="button"
-                onClick={() =>
-                  quantity === 1 ? onRemove() : onUpdateQuantity(quantity - 1)
-                }
-                aria-label="Decrease quantity"
-              >
-                <Minus size={16} />
-              </button>
 
-              <span>{quantity}</span>
+            <span>{quantity}</span>
 
-              <button
-                type="button"
-                onClick={() => onUpdateQuantity(quantity + 1)}
-                aria-label="Increase quantity"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-          )}
+            <button
+              aria-label="Increase quantity"
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          <button
+            className="add-button"
+            disabled={!product.available}
+            onClick={() => addToCart(product.id, quantity)}
+          >
+            {product.available ? 'Add to inquiry' : 'Unavailable'}
+          </button>
         </div>
       </div>
     </article>
   );
 }
+
 function InquiryPage({
   cart,
-  onAdd,
-  onRemove,
-  onUpdateQuantity,
-  onClear,
-}: {
-  cart: CartItem[];
-  onAdd: (product: Product) => void;
-  onRemove: (productId: number) => void;
-  onUpdateQuantity: (productId: number, quantity: number) => void;
-  onClear: () => void;
-}) {
-  const [showForm, setShowForm] = useState(false);
-  const totals = getTotals(cart);
-
-  return (
-    <main className="page-container inquiry-page">
-      <div className="page-heading">
-        <span className="eyebrow">YOUR SELECTION</span>
-        <h1>Your Inquiry</h1>
-        <p>Review your selected crackers before sending your inquiry.</p>
-      </div>
-
-      {cart.length === 0 ? (
-        <div className="empty-state">
-          <ShoppingBag size={40} />
-          <h2>Your list is empty</h2>
-          <p>Add products to your list to start an inquiry.</p>
-
-          <a href="#products" className="btn btn-primary">
-            Browse Products
-          </a>
-        </div>
-      ) : (
-        <div className="inquiry-layout">
-          <section className="inquiry-items">
-            <div className="section-heading">
-              <h2>Selected Products</h2>
-
-              <button
-                type="button"
-                className="text-button"
-                onClick={onClear}
-              >
-                Clear List
-              </button>
-            </div>
-
-            {cart.map(({ product, quantity }) => (
-              <div className="inquiry-item" key={product.id}>
-                <div className="inquiry-item-info">
-                  <h3>{product.name}</h3>
-
-                  <p>
-                    Market Price: {money(product.marketPrice)}
-                  </p>
-
-                  <p className="sale-price">
-                    Sale Price: {money(product.salePrice)}
-                  </p>
-                </div>
-
-                <div className="inquiry-item-actions">
-                  <div className="quantity-control">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        quantity === 1
-                          ? onRemove(product.id)
-                          : onUpdateQuantity(product.id, quantity - 1)
-                      }
-                      aria-label={`Decrease ${product.name} quantity`}
-                    >
-                      <Minus size={16} />
-                    </button>
-
-                    <span>{quantity}</span>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onUpdateQuantity(product.id, quantity + 1)
-                      }
-                      aria-label={`Increase ${product.name} quantity`}
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  <strong>{money(product.salePrice * quantity)}</strong>
-
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => onRemove(product.id)}
-                    aria-label={`Remove ${product.name}`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <aside className="inquiry-summary">
-            <Summary totals={totals} />
-
-            {!showForm ? (
-              <button
-                type="button"
-                className="btn btn-primary full-width"
-                onClick={() => setShowForm(true)}
-              >
-                Continue to Details
-                <ArrowRight size={18} />
-              </button>
-            ) : (
-              <CustomerForm cart={cart} totals={totals} />
-            )}
-          </aside>
-        </div>
-      )}
-    </main>
-  );
-}
-function Summary({ totals }: { totals: Totals }) {
-  return (
-    <div className="summary-card">
-      <h2>Order Summary</h2>
-
-      <div className="summary-row">
-        <span>Market Price Total</span>
-        <span>{money(totals.market)}</span>
-      </div>
-
-      <div className="summary-row">
-        <span>Sale Price Total</span>
-        <span>{money(totals.sale)}</span>
-      </div>
-
-      <div className="summary-row savings-row">
-        <span>You Save</span>
-        <span>{money(totals.savings)}</span>
-      </div>
-
-      <div className="summary-total">
-        <span>TOTAL</span>
-        <strong>{money(totals.sale)}</strong>
-      </div>
-
-      <p className="summary-note">
-        Your inquiry will be sent through WhatsApp.
-      </p>
-    </div>
-  );
-}
-function CustomerForm({
-  cart,
   totals,
+  updateQuantity,
+  removeItem,
+  navigate,
 }: {
   cart: CartItem[];
   totals: Totals;
+  updateQuantity: (id: number, change: number) => void;
+  removeItem: (id: number) => void;
+  navigate: (page: Page) => void;
 }) {
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [area, setArea] = useState("");
-  const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
+  const cartProducts: CartProduct[] = cart.flatMap((item) => {
+    const product = products.find(
+      (entry) => entry.id === item.productId,
+    );
 
-    if (cart.length === 0) {
-      setError("Please add at least one product.");
-      return;
-    }
-
-    const cleanMobile = mobile.replace(/\D/g, "");
-
-    if (cleanMobile.length !== 10) {
-      setError("Enter a valid 10-digit mobile number.");
-      return;
-    }
-
-    const orderLines = cart.map(({ product, quantity }) => {
-      const productName = product.name.padEnd(18, " ");
-      const qty = String(quantity).padStart(3, " ");
-      const price = money(product.salePrice);
-
-      return `${productName} ${qty}  ${price}`;
-    });
-
-    const message = [
-      "🎆 INIYAN CRACKERS",
-      "     ORDER INQUIRY",
-      "━━━━━━━━━━━━━━━━━━━━",
-      "",
-      `Name: ${name.trim()}`,
-      `Mobile: ${cleanMobile}`,
-      `Area: ${area.trim()}`,
-      "",
-      "🛒 ORDER DETAILS",
-      "",
-      "Product             Qty    Price",
-      "────────────────────",
-      ...orderLines,
-      "",
-      "────────────────────",
-      `💰 TOTAL: ${money(totals.sale)}`,
-      "",
-      "Thank you!",
-    ].join("\n");
-
-    const whatsappNumber = OWNER_WHATSAPP.replace(/\D/g, "");
-
-    const whatsappUrl =
-      `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-  }
+    return product ? [{ product, quantity: item.quantity }] : [];
+  });
 
   return (
-    <form className="customer-form" onSubmit={handleSubmit}>
-      <h2>Your Details</h2>
+    <section className="section page-section">
+      <div className="page-title compact">
+        <div>
+          <span className="kicker">Your selection</span>
+          <h1>Inquiry list.</h1>
+          <p>Review your products before sending your request.</p>
+        </div>
 
-      <p>
-        Enter your details to send your product inquiry through WhatsApp.
-      </p>
+        <div className="inquiry-count">
+          <List size={17} />
+          {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+        </div>
+      </div>
 
-      <label htmlFor="customer-name">Full Name</label>
-      <input
-        id="customer-name"
-        type="text"
-        placeholder="Enter your name"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        required
-      />
+      {cartProducts.length === 0 ? (
+        <div className="empty-state cart-empty">
+          <Package size={40} />
+          <h3>Your inquiry is empty</h3>
+          <p>Add products to see them here and get your total.</p>
 
-      <label htmlFor="customer-mobile">Mobile Number</label>
-      <input
-        id="customer-mobile"
-        type="tel"
-        inputMode="numeric"
-        placeholder="10-digit mobile number"
-        value={mobile}
-        onChange={(event) =>
-          setMobile(event.target.value.replace(/\D/g, "").slice(0, 10))
-        }
-        required
-      />
+          <button
+            className="button primary"
+            onClick={() => navigate('products')}
+          >
+            Browse products
+            <ArrowRight size={17} />
+          </button>
+        </div>
+      ) : (
+        <div className="inquiry-layout">
+          <div className="inquiry-list">
+            {cartProducts.map(({ product, quantity }) => (
+              <div className="inquiry-item" key={product.id}>
+                <div className={`mini-art art-${product.id % 6}`}>
+                  <Sparkles size={22} />
+                </div>
 
-      <label htmlFor="customer-area">Area / Location</label>
-      <input
-        id="customer-area"
-        type="text"
-        placeholder="Enter your area"
-        value={area}
-        onChange={(event) => setArea(event.target.value)}
-        required
-      />
+                <div className="item-main">
+                  <h3>{product.name}</h3>
+                  <p>
+                    Market {money(product.marketPrice)}{' '}
+                    <span>·</span> Sale {money(product.salePrice)}
+                  </p>
+                </div>
 
-      {error && <p className="form-error">{error}</p>}
+                <div className="quantity">
+                  <button
+                    onClick={() => updateQuantity(product.id, -1)}
+                    aria-label={`Decrease ${product.name} quantity`}
+                  >
+                    <Minus size={14} />
+                  </button>
 
-      <button type="submit" className="btn btn-whatsapp full-width">
-        <MessageCircle size={18} />
-        Send Inquiry on WhatsApp
-      </button>
+                  <span>{quantity}</span>
 
-      <p className="form-note">
-        WhatsApp will open with your inquiry message. Review it and tap Send.
-      </p>
-    </form>
+                  <button
+                    onClick={() => updateQuantity(product.id, 1)}
+                    aria-label={`Increase ${product.name} quantity`}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <strong className="item-subtotal">
+                  {money(product.salePrice * quantity)}
+                </strong>
+
+                <button
+                  className="remove-button"
+                  aria-label={`Remove ${product.name}`}
+                  onClick={() => removeItem(product.id)}
+                >
+                  <Trash2 size={17} />
+                </button>
+              </div>
+            ))}
+
+            <button
+              className="continue-button"
+              onClick={() => navigate('products')}
+            >
+              <ChevronLeft size={16} />
+              Continue shopping
+            </button>
+          </div>
+
+          <Summary
+            totals={totals}
+            onProceed={() => setShowForm(true)}
+          />
+        </div>
+      )}
+
+      {showForm && (
+        <CustomerForm
+          cart={cartProducts}
+          totals={totals}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+    </section>
   );
 }
+
+function Summary({
+  totals,
+  onProceed,
+}: {
+  totals: Totals;
+  onProceed: () => void;
+}) {
+  return (
+    <aside className="summary">
+      <h2>Inquiry summary</h2>
+
+      <div className="summary-line">
+        <span>Market price total</span>
+        <strong>{money(totals.market)}</strong>
+      </div>
+
+      <div className="summary-line sale-line">
+        <span>Sale price total</span>
+        <strong>{money(totals.sale)}</strong>
+      </div>
+
+      <div className="saving-line">
+        <Check size={15} />
+        You save {money(totals.savings)}
+      </div>
+
+      <div className="total-line">
+        <span>Total</span>
+        <strong>{money(totals.sale)}</strong>
+      </div>
+
+      <button
+        className="button primary full"
+        onClick={onProceed}
+      >
+        Proceed to inquiry
+        <ArrowRight size={17} />
+      </button>
+
+      <p className="summary-note">
+        No payment required. Create and share your invoice image.
+      </p>
+    </aside>
+  );
+}
+
+function CustomerForm({
+  cart,
+  totals,
+  onClose,
+}: {
+  cart: CartProduct[];
+  totals: Totals;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    mobile: '',
+    area: '',
+  });
+
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    const name = form.name.trim();
+    const mobile = form.mobile.replace(/\D/g, '');
+    const area = form.area.trim();
+
+    if (!name || !mobile || !area) {
+      setError('Please fill in your name, mobile number and area.');
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setError('Please enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+
+    if (cart.length === 0) {
+      setError('Please add at least one product to your inquiry.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const invoiceId = `INI-${Date.now().toString().slice(-6)}`;
+      const invoiceDate = new Date().toLocaleDateString('en-IN');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        throw new Error('Could not create invoice image.');
+      }
+
+      const width = 1000;
+      const headerHeight = 250;
+      const rowHeight = 48;
+      const footerHeight = 190;
+      const height = headerHeight + cart.length * rowHeight + footerHeight;
+      canvas.width = width;
+      canvas.height = height;
+
+      // White invoice background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      // Invoice header
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 34px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(BUSINESS_NAME, 35, 52);
+
+      ctx.fillStyle = '#333333';
+      ctx.font = '20px Arial';
+      ctx.fillText(BUSINESS_AREA, 35, 87);
+      ctx.fillText(`Phone: ${BUSINESS_PHONE}`, 35, 117);
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText('INQUIRY INVOICE', width - 35, 52);
+      ctx.fillStyle = '#333333';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Invoice: ${invoiceId}`, width - 35, 87);
+      ctx.fillText(`Date: ${invoiceDate}`, width - 35, 117);
+
+      // Customer details panel
+      ctx.fillStyle = '#fff7ed';
+      ctx.fillRect(25, 145, width - 50, 90);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#222222';
+      ctx.font = 'bold 22px Arial';
+      ctx.fillText('CUSTOMER DETAILS', 40, 174);
+      ctx.font = '20px Arial';
+      ctx.fillText(`Name: ${name}`, 40, 205);
+      ctx.fillText(`Mobile: ${mobile}`, 380, 205);
+      ctx.fillText(`Area: ${area}`, 680, 205);
+
+      // Product table header
+      let y = headerHeight;
+      ctx.fillStyle = '#7c2d12';
+      ctx.fillRect(25, y, width - 50, 48);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 19px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('S.NO', 40, y + 30);
+      ctx.fillText('PRODUCT NAME', 120, y + 30);
+      ctx.textAlign = 'right';
+      ctx.fillText('QTY', 690, y + 30);
+      ctx.fillText('RATE', 830, y + 30);
+      ctx.fillText('AMOUNT', 955, y + 30);
+      y += 48;
+
+      cart.forEach(({ product, quantity }, index) => {
+        ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#fff7ed';
+        ctx.fillRect(25, y, width - 50, rowHeight);
+        ctx.strokeStyle = '#cccccc';
+        ctx.strokeRect(25, y, width - 50, rowHeight);
+
+        ctx.fillStyle = '#222222';
+        ctx.font = '19px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(String(index + 1), 40, y + 30);
+
+        let productName = product.name;
+        while (ctx.measureText(productName).width > 490 && productName.length > 5) {
+          productName = `${productName.slice(0, -4)}...`;
+        }
+        ctx.fillText(productName, 120, y + 30);
+        ctx.textAlign = 'right';
+        ctx.fillText(String(quantity), 690, y + 30);
+        ctx.fillText(money(product.salePrice), 830, y + 30);
+        ctx.fillText(money(product.salePrice * quantity), 955, y + 30);
+        y += rowHeight;
+      });
+
+      // Totals panel
+      y += 22;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#333333';
+      ctx.font = '22px Arial';
+      ctx.fillText(`Market Price Total: ${money(totals.market)}`, width - 40, y);
+      y += 36;
+      ctx.fillText(`You Save: ${money(totals.savings)}`, width - 40, y);
+      y += 42;
+      ctx.fillStyle = '#7c2d12';
+      ctx.font = 'bold 30px Arial';
+      ctx.fillText(`TOTAL: ${money(totals.sale)}`, width - 40, y);
+      ctx.textAlign = 'left';
+
+      // Share only the invoice image. No WhatsApp text message is created.
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error('Could not create invoice image.'));
+        }, 'image/png');
+      });
+
+      const imageFile = new File([blob], `${invoiceId}.png`, {
+        type: 'image/png',
+      });
+
+      if (
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [imageFile] })
+      ) {
+        await navigator.share({ files: [imageFile] });
+      } else {
+        const imageUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `${invoiceId}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+        setError('Invoice image downloaded. Open WhatsApp and attach the PNG image manually.');
+      }
+    } catch (submitError) {
+      // Closing the share sheet can also reject navigator.share().
+      const errorName =
+        submitError instanceof Error ? submitError.name : '';
+      if (errorName !== 'AbortError') {
+        console.error('Inquiry image sharing failed:', submitError);
+        setError('Could not prepare the invoice image. Please try again.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="customer-form-title"
+    >
+      <form className="details-form" onSubmit={submit}>
+        <button
+          type="button"
+          className="close-button"
+          onClick={onClose}
+          aria-label="Close form"
+        >
+          <X size={20} />
+        </button>
+
+        <span className="kicker">Almost there</span>
+
+        <h2 id="customer-form-title">Customer details.</h2>
+
+        <p>
+          Enter your details to create an invoice image to share on WhatsApp.
+        </p>
+
+        <label>
+          Name
+          <input
+            type="text"
+            autoComplete="name"
+            value={form.name}
+            onChange={(event) =>
+              setForm({ ...form, name: event.target.value })
+            }
+            placeholder="Your full name"
+            required
+          />
+        </label>
+
+        <label>
+          Mobile number
+          <input
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            value={form.mobile}
+            onChange={(event) =>
+              setForm({ ...form, mobile: event.target.value })
+            }
+            placeholder="10-digit mobile number"
+            required
+          />
+        </label>
+
+        <label>
+          Area / location
+          <input
+            type="text"
+            autoComplete="address-level2"
+            value={form.area}
+            onChange={(event) =>
+              setForm({ ...form, area: event.target.value })
+            }
+            placeholder="Your area or town"
+            required
+          />
+        </label>
+
+
+        {error && <p className="form-error">{error}</p>}
+
+        <button
+          type="submit"
+          className="button button-primary submit-button"
+          disabled={submitting}
+        >
+          {submitting ? 'Preparing invoice image...' : 'Share invoice image'}
+          <ArrowRight size={18} />
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function AboutPage() {
   return (
-    <main className="page-container about-page">
-      <div className="page-heading">
-        <span className="eyebrow">ABOUT US</span>
-        <h1>About Iniyan Crackers</h1>
+    <section className="section page-section">
+      <div className="section-heading">
+        <span className="kicker">About us</span>
+        <h1>Making every celebration brighter.</h1>
+
         <p>
-          Bringing brightness, happiness, and celebration to every occasion.
+          At {BUSINESS_NAME}, we help families celebrate their
+          special moments with a selection of crackers at clear,
+          affordable prices.
         </p>
       </div>
 
-      <section className="about-content">
-        <div className="about-card">
-          <Sparkles size={32} />
-          <h2>Our Story</h2>
+      <div className="about-grid">
+        <article className="about-card">
+          <Sparkles size={28} />
+          <h3>Celebration for everyone</h3>
           <p>
-            Iniyan Crackers aims to make your celebrations special with a
-            selection of crackers for families and festive occasions.
+            Explore products for festivals, family gatherings and
+            special occasions.
           </p>
-        </div>
+        </article>
 
-        <div className="about-card">
-          <Heart size={32} />
-          <h2>Our Promise</h2>
+        <article className="about-card">
+          <Tag size={28} />
+          <h3>Clear pricing</h3>
           <p>
-            We focus on helping customers explore products, compare prices,
-            and send their inquiries conveniently through WhatsApp.
+            Compare market prices and sale prices before adding
+            products to your inquiry.
           </p>
-        </div>
+        </article>
 
-        <div className="about-card">
-          <Gift size={32} />
-          <h2>Our Collection</h2>
+        <article className="about-card">
+          <MessageCircle size={28} />
+          <h3>Easy inquiries</h3>
           <p>
-            Explore our product range, including individual products,
-            gift boxes, and family packs.
+            Select your products and send your inquiry through
+            WhatsApp.
           </p>
-        </div>
-      </section>
-    </main>
+        </article>
+      </div>
+
+      <div className="about-note">
+        <h2>Celebrate responsibly.</h2>
+        <p>
+          Follow local rules, read safety instructions and use
+          fireworks responsibly. Supervise children and maintain
+          a safe distance.
+        </p>
+      </div>
+    </section>
   );
 }
+
 function ContactRow({
   icon,
   title,
   children,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="contact-row">
       <div className="contact-icon">{icon}</div>
 
-      <div>
+      <div className="contact-row-content">
         <h3>{title}</h3>
-        <div>{children}</div>
+        {children}
       </div>
     </div>
   );
 }
 
 function ContactPage() {
-  const whatsappNumber = OWNER_WHATSAPP.replace(/\D/g, "");
+  const whatsappNumber = OWNER_WHATSAPP.replace(/\D/g, '');
 
   return (
-    <main className="page-container contact-page">
-      <div className="page-heading">
-        <span className="eyebrow">GET IN TOUCH</span>
-        <h1>Contact Us</h1>
-        <p>Have questions about our products? Get in touch with us.</p>
+    <section className="section page-section">
+      <div className="section-heading">
+        <span className="kicker">Contact us</span>
+        <h1>We’re happy to help.</h1>
+
+        <p>
+          Have a question about products or pricing? Contact us
+          using the details below.
+        </p>
       </div>
 
-      <section className="contact-card">
+      <div className="contact-card">
         <ContactRow
           icon={<MapPin size={22} />}
-          title="Our Location"
+          title="Our location"
         >
           <p>{BUSINESS_AREA}</p>
         </ContactRow>
 
         <ContactRow
           icon={<Phone size={22} />}
-          title="Phone Number"
+          title="Phone"
         >
-          <p>{BUSINESS_PHONE}</p>
+          <a href={`tel:${BUSINESS_PHONE}`}>
+            {BUSINESS_PHONE}
+          </a>
         </ContactRow>
 
         <ContactRow
-          icon={<Clock size={22} />}
-          title="Business Hours"
+          icon={<Clock3 size={22} />}
+          title="Business hours"
         >
           <p>{BUSINESS_HOURS}</p>
         </ContactRow>
 
+        <ContactRow
+          icon={<MessageCircle size={22} />}
+          title="WhatsApp"
+        >
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Chat with us on WhatsApp
+          </a>
+        </ContactRow>
+      </div>
+
+      <div className="contact-cta">
+        <h2>Ready to make an inquiry?</h2>
+
+        <p>
+          Select your products and send us your list through WhatsApp.
+        </p>
+
         <a
-          className="btn btn-whatsapp full-width"
+          className="button primary"
           href={`https://wa.me/${whatsappNumber}`}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
         >
-          <MessageCircle size={18} />
-          Contact on WhatsApp
+          Contact us on WhatsApp
+          <ArrowRight size={18} />
         </a>
-      </section>
-    </main>
+      </div>
+    </section>
   );
 }
 
